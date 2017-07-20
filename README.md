@@ -10,9 +10,9 @@ TODO
   - Comment the code!!
   
 - Architecture:
-  - Design
+  - Design (done)
   - Implement
   
 - Running:
-  - Load files to server
+  - Load files to server (done)
   
