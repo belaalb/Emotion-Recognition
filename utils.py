@@ -151,7 +151,7 @@ def read_split_data_hdf(hdf_filename = 'DEAP_dataset.hdf'):
 
 if __name__ == '__main__':
 
-	create_hdf(2)
+	create_hdf(32)
 	merge_all_subjects_norm_split_store_as_hdf()
 
 	#data_eeg, data_eog, data_emg, data_gsr, data_resp, data_plet, data_temp, labels = read_split_data_hdf() 
