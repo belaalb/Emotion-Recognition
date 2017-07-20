@@ -1,4 +1,5 @@
 import numpy as np
+import random
 import cPickle
 import os, sys
 import h5py
@@ -68,7 +69,7 @@ def create_hdf(subjects_number = 32, hdf_filename = 'DEAP_dataset_subjects_list.
 	complete_dataset_file.close()
 
 
-def merge_all_subjects_store_as_hdf(hdf_filename_to_read = 'DEAP_dataset_subjects_list.hdf', hdf_filename_to_save = 'DEAP_dataset.hdf'):
+def merge_all_subjects_store_as_hdf(hdf_filename_to_read = 'DEAP_dataset_subjects_list.hdf', hdf_filename_to_save = 'DEAP_dataset_aux.hdf'):
 
 	data, labels = read_hdf(hdf_filename_to_read)
 	
@@ -81,12 +82,23 @@ def merge_all_subjects_store_as_hdf(hdf_filename_to_read = 'DEAP_dataset_subject
 	complete_dataset_file.close()
 
 
-def merge_all_subjects_norm_split_store_as_hdf(hdf_filename_to_read = 'DEAP_dataset_subjects_list.hdf', hdf_filename_to_save = 'DEAP_dataset.hdf'):
+def merge_all_subjects_shuffle_norm_split_store_as_hdf(hdf_filename_to_read = 'DEAP_dataset_subjects_list.hdf', hdf_filename_to_save = 'DEAP_dataset_aux.hdf'):
 
 	data, labels = read_hdf(hdf_filename_to_read)
 	
 	data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2], data.shape[3]))
 	labels = np.reshape(labels, (labels.shape[0]*labels.shape[1], labels.shape[2]))
+
+	# Shuffling
+	
+	number_ef_examples = data.shape[0]
+	random_seq = range(0, number_ef_examples) 
+	random.shuffle(random_seq)
+	data = data[random_seq, :, :]
+	labels = labels[random_seq, :]
+
+
+	# Normalizing labels between 0 and 1
 
 	max_val_0 = np.max(labels[:, 0])
 	min_val_0 = np.min(labels[:, 0])
@@ -103,6 +115,9 @@ def merge_all_subjects_norm_split_store_as_hdf(hdf_filename_to_read = 'DEAP_data
 	max_val_3 = np.max(labels[:, 3])
 	min_val_3 = np.min(labels[:, 3])
 	labels[:, 3] = (labels[:, 3] - min_val_3)/(max_val_3 - min_val_3)
+
+	
+	# Spliting the dataset according to different signal modalities
 
 	data_eeg = data[:, 0:32, :]
 	data_eog = data[:, 32:34, :]
@@ -146,12 +161,30 @@ def read_split_data_hdf(hdf_filename = 'DEAP_dataset.hdf'):
 	data_temp = open_file['temp']
 	labels = open_file['labels']
 
-	return data_eeg, data_eog, data_emg, data_gsr, data_resp, data_plet, data_temp, labels	
+	return data_eeg, data_eog, data_emg, data_gsr, data_resp, data_plet, data_temp, labels
 
+def minibatch_generator(dataset_filename = 'DEAP_dataset.hdf', dataset_size = 80640, minibatch_size = 32): #80640 = 32 sub x 63 segments/trial x 40 trials		
+	
+	number_of_slices = int(np.ceil(dataset_size/minibatch_size))
+	
+	while True:
+		open_file = h5py.File(dataset_filename, 'r')
+
+		for i in xrange(0, number_of_slices):
+			eeg_minibatch = open_file['eeg'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
+			eog_minibatch = open_file['eog'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
+			emg_minibatch = open_file['emg'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
+			gsr_minibatch = open_file['gsr'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
+			resp_minibatch = open_file['resp'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
+			plet_minibatch = open_file['plet'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
+			temp_minibatch = open_file['temp'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
+			labels_minibatch = open_file['labels'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
+       			
+       			yield (eeg_minibatch, eog_minibatch, emg_minibatch, gsr_minibatch, resp_minibatch, plet_minibatch, temp_minibatch, labels_minibatch)
+
+		open_file.close()
 
 if __name__ == '__main__':
 
-	create_hdf(32)
-	merge_all_subjects_norm_split_store_as_hdf()
-
-	#data_eeg, data_eog, data_emg, data_gsr, data_resp, data_plet, data_temp, labels = read_split_data_hdf() 
+	gen = minibatch_generator()
+	eeg, eog, emg, gsr, resp, plet, temp, labels = gen.next()
