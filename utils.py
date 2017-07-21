@@ -139,12 +139,77 @@ def merge_all_subjects_shuffle_norm_split_store_as_hdf(hdf_filename_to_read = 'D
 	complete_dataset_file.close()
 
 
+def merge_shuffle_norm_split_tvt_store_as_hdf(hdf_filename_to_read = 'DEAP_dataset_subjects_list.hdf', hdf_filename_to_save_train = 'DEAP_dataset_train.hdf', hdf_filename_to_save_valid = 'DEAP_dataset_valid.hdf', hdf_filename_to_save_test = 'DEAP_dataset_test.hdf'):
+
+	#tvt: train, valid, test
+
+	data, labels = read_hdf(hdf_filename_to_read)
+	
+	data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2], data.shape[3]))
+	labels = np.reshape(labels, (labels.shape[0]*labels.shape[1], labels.shape[2]))
+
+	# Shuffling
+	
+	number_ef_examples = data.shape[0]
+	random_seq = range(0, number_ef_examples) 
+	random.shuffle(random_seq)
+	data = data[random_seq, :, :]
+	labels = labels[random_seq, :]
+
+
+	# Normalizing labels between 0 and 1
+
+	max_val_0 = np.max(labels[:, 0])
+	min_val_0 = np.min(labels[:, 0])
+	labels[:, 0] = (labels[:, 0] - min_val_0)/(max_val_0 - min_val_0)
+
+	max_val_1 = np.max(labels[:, 1])
+	min_val_1 = np.min(labels[:, 1])
+	labels[:, 1] = (labels[:, 1] - min_val_1)/(max_val_1 - min_val_1)
+
+	max_val_2 = np.max(labels[:, 2])
+	min_val_2 = np.min(labels[:, 2])
+	labels[:, 2] = (labels[:, 2] - min_val_2)/(max_val_2 - min_val_2)
+	
+	max_val_3 = np.max(labels[:, 3])
+	min_val_3 = np.min(labels[:, 3])
+	labels[:, 3] = (labels[:, 3] - min_val_3)/(max_val_3 - min_val_3)
+
+	
+	# Spliting the dataset according to different signal modalities
+
+	data_train = data[0:int(0.7*number_ef_examples), :, :]
+	data_valid = data[int(0.7*number_ef_examples):int(0.9*number_ef_examples), :, :]
+	data_test = data[int(0.9*number_ef_examples):-1, :, :]
+	labels_train = labels[0:int(0.7*number_ef_examples), :]
+	labels_valid = labels[int(0.7*number_ef_examples):int(0.9*number_ef_examples), :]
+	labels_test = labels[int(0.9*number_ef_examples):-1, :]
+	
+
+	dataset_file_train = h5py.File(hdf_filename_to_save_train, 'w')
+	dataset_train = dataset_file_train.create_dataset('data', data = data_train)
+	dataset_train = dataset_file_train.create_dataset('labels', data = labels_train)
+	dataset_file_train.close()
+
+	dataset_file_valid = h5py.File(hdf_filename_to_save_valid, 'w')
+	dataset_valid = dataset_file_valid.create_dataset('data', data = data_valid)
+	dataset_valid = dataset_file_valid.create_dataset('labels', data = labels_valid)
+	dataset_file_valid.close()
+
+	dataset_file_test = h5py.File(hdf_filename_to_save_test, 'w')
+	dataset_test = dataset_file_test.create_dataset('data', data = data_test)
+	dataset_test = dataset_file_test.create_dataset('labels', data = labels_test)
+	dataset_file_test.close()
+
+
 def read_hdf(hdf_filename = 'DEAP_dataset_subjects_list.hdf'):
 
 	open_file = h5py.File(hdf_filename, 'r')
 	
 	data = open_file['data']
+	print(data.shape)
 	labels = open_file['labels']
+	print(labels.shape)
 
 	return data, labels
 
@@ -186,5 +251,11 @@ def minibatch_generator(dataset_filename = 'DEAP_dataset.hdf', dataset_size = 80
 
 if __name__ == '__main__':
 
-	gen = minibatch_generator()
-	eeg, eog, emg, gsr, resp, plet, temp, labels = gen.next()
+	merge_shuffle_norm_split_tvt_store_as_hdf()
+
+	#read_hdf('DEAP_dataset_train.hdf')
+	#read_hdf('DEAP_dataset_valid.hdf')
+	#read_hdf('DEAP_dataset_test.hdf')
+
+	#gen = minibatch_generator()
+	#eeg, eog, emg, gsr, resp, plet, temp, labels = gen.next()
