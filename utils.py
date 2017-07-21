@@ -207,9 +207,7 @@ def read_hdf(hdf_filename = 'DEAP_dataset_subjects_list.hdf'):
 	open_file = h5py.File(hdf_filename, 'r')
 	
 	data = open_file['data']
-	print(data.shape)
 	labels = open_file['labels']
-	print(labels.shape)
 
 	return data, labels
 
@@ -228,7 +226,7 @@ def read_split_data_hdf(hdf_filename = 'DEAP_dataset.hdf'):
 
 	return data_eeg, data_eog, data_emg, data_gsr, data_resp, data_plet, data_temp, labels
 
-def minibatch_generator(dataset_filename = 'DEAP_dataset.hdf', dataset_size = 80640, minibatch_size = 32): #80640 = 32 sub x 63 segments/trial x 40 trials		
+def minibatch_generator_multimodal(dataset_filename = 'DEAP_dataset.hdf', dataset_size = 80640, minibatch_size = 32): #80640 = 32 sub x 63 segments/trial x 40 trials		
 	
 	number_of_slices = int(np.ceil(dataset_size/minibatch_size))
 	
@@ -249,13 +247,45 @@ def minibatch_generator(dataset_filename = 'DEAP_dataset.hdf', dataset_size = 80
 
 		open_file.close()
 
+def minibatch_generator_train(dataset_filename = 'DEAP_dataset_train.hdf', dataset_size = 80640*0.7, minibatch_size = 32): #80640 = 32 sub x 63 segments/trial x 40 trials		
+	
+	number_of_slices = int(np.ceil(dataset_size/minibatch_size))
+	
+	while True:
+		open_file = h5py.File(dataset_filename, 'r')
+
+		for i in xrange(0, number_of_slices):
+			data_minibatch_train = open_file['data'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
+			labels_minibatch_train = open_file['labels'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
+       			
+       			yield (data_minibatch_train, labels_minibatch_train)
+
+		open_file.close()
+
+def minibatch_generator_valid(dataset_filename = 'DEAP_dataset_valid.hdf', dataset_size = 80640*0.2, minibatch_size = 32): #80640 = 32 sub x 63 segments/trial x 40 trials		
+	
+	number_of_slices = int(np.ceil(dataset_size/minibatch_size))
+	
+	while True:
+		open_file = h5py.File(dataset_filename, 'r')
+
+		for i in xrange(0, number_of_slices):
+			data_minibatch_valid = open_file['data'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
+			labels_minibatch_valid = open_file['labels'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
+       			
+       			yield (data_minibatch_valid, labels_minibatch_valid)
+
+		open_file.close()				
+
 if __name__ == '__main__':
 
-	merge_shuffle_norm_split_tvt_store_as_hdf()
+	#merge_shuffle_norm_split_tvt_store_as_hdf()
 
 	#read_hdf('DEAP_dataset_train.hdf')
 	#read_hdf('DEAP_dataset_valid.hdf')
 	#read_hdf('DEAP_dataset_test.hdf')
 
-	#gen = minibatch_generator()
-	#eeg, eog, emg, gsr, resp, plet, temp, labels = gen.next()
+	gen = minibatch_generator_valid()
+	data, labels = gen.next()
+	print(data.shape)
+	print(labels.shape)
