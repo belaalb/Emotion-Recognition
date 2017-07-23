@@ -1,8 +1,9 @@
 from __future__ import print_function
 import argparse
 import torch
-import models_zoo
-import data_load
+import torch.optim
+import model
+import utils
 from train_loop import TrainLoop
 
 # Training settings
@@ -30,14 +31,14 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-model = models_zoo.model_im()
+model = model.model()
 
 if args.cuda:
 	model.cuda()
 
-optimizer = optim.Adam(lr = args.lr, weight_decay = args.l2)
+optimizer = optim.Adam(model.params(), lr = args.lr, weight_decay = args.l2)
 
-trainer = TrainLoop(model, optimizer, train_loader, valid_loader, checkpoint_path = args.checkpoint_path, checkpoint_epoch = args.checkpoint_epoch, cuda = args.cuda)
+trainer = TrainLoop(model, optimizer, utils.minibatch_generator_train(), utils.minibatch_generator_valid(), checkpoint_path = args.checkpoint_path, checkpoint_epoch = args.checkpoint_epoch, cuda = args.cuda)
 
 print('Cuda Mode is: {}'.format(args.cuda))
 
