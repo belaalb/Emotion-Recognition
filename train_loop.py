@@ -57,7 +57,7 @@ class TrainLoop(object):
 			for t, batch in train_iter:
 
 				train_loss = self.train_step(batch, tl_delay)
-				self.history['train_loss'].append(self.generator.minibatch_generator_valid()
+				self.history['train_loss'].append(self.generator.minibatch_generator_valid())
 				self.total_iters += 1
 				if save_every is not None:
 					if self.total_iters % save_every == 0:
@@ -104,7 +104,7 @@ class TrainLoop(object):
 
 		out = model.forward(x)
 
-		loss = torch.nn.functional.binarycross_entropyLoss(out, y)
+		loss = np.mean(torch.nn.functional.pairwise_distance(out, y))
 
 		self.optimizer().zero_grad()
 		loss.backward()
@@ -115,8 +115,8 @@ class TrainLoop(object):
 	def valid(self, batch):
 		
 		x, y = batch
-		x = Variable(x1, requires_grad=False)
-		y = Variable(y, requires_grad=False)
+		x = Variable(x1, requires_grad = False)
+		y = Variable(y, requires_grad = False)
 
 		if self.cuda_mode:
 			x.cuda()
@@ -124,7 +124,7 @@ class TrainLoop(object):
 
 		out = model.forward(x)
 
-		loss = torch.nn.functional.binarycross_entropyLoss(out, y, size_average=False)
+		loss = np.mean(torch.nn.functional.pairwise_distance(out, y))			#checar
 		
 		return loss.data[0]
 

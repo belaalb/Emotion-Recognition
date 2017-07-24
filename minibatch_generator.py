@@ -4,9 +4,9 @@ import os
 
 
 
-class mini_batch_generator:
+class minibatch_generator:
 
-	def __init__(self, minibatch_size = 32, dataset_filename_train = "DEAP_dataset", dataset_size = 80640, train_prop = 0.7, valid_prop = 0.2):
+	def __init__(self, minibatch_size = 32, dataset_filename = "DEAP_dataset", dataset_size = 80640, train_prop = 0.7, valid_prop = 0.2):
 		
 		self.dataset_filename = dataset_filename
 		self.dataset_filename_train = os.path.join(self.dataset_filename, "_train.hdf")
@@ -20,7 +20,6 @@ class mini_batch_generator:
 	def minibatch_generator_train(): #80640 = 32 sub x 63 segments/trial x 40 trials		
 	
 		number_of_slices = int(np.ceil((self.dataset_size*self.train_prop)/self.minibatch_size))
-
 
 		while True:
 			open_file = h5py.File(self.dataset_filename_train, 'r')

@@ -4,7 +4,7 @@ import torch
 import torch.optim
 import model
 import utils
-import minibatch_generator
+from minibatch_generator import minibatch_generator
 from train_loop import TrainLoop
 
 # Training settings
@@ -26,7 +26,7 @@ args.cuda = not args.no_cuda and torch.cuda.is_available()
 
 torch.manual_seed(args.seed)
 
-generator = minibatch_generator(minibatch_size)
+generator = minibatch_generator(args.minibatch_size)
 
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
@@ -36,7 +36,7 @@ model = model.model()
 if args.cuda:
 	model.cuda()
 
-optimizer = optim.Adam(model.params(), lr = args.lr, weight_decay = args.l2)
+optimizer = torch.optim.Adam(model.params(), lr = args.lr, weight_decay = args.l2)
 
 trainer = TrainLoop(model, optimizer, generator, checkpoint_path = args.checkpoint_path, checkpoint_epoch = args.checkpoint_epoch, cuda = args.cuda)
 
