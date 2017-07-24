@@ -247,35 +247,6 @@ def minibatch_generator_multimodal(dataset_filename = 'DEAP_dataset.hdf', datase
 
 		open_file.close()
 
-def minibatch_generator_train(dataset_filename = 'DEAP_dataset_train.hdf', dataset_size = 80640*0.7, minibatch_size = 32): #80640 = 32 sub x 63 segments/trial x 40 trials		
-	
-	number_of_slices = int(np.ceil(dataset_size/minibatch_size))
-	
-	while True:
-		open_file = h5py.File(dataset_filename, 'r')
-
-		for i in xrange(0, number_of_slices):
-			data_minibatch_train = open_file['data'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
-			labels_minibatch_train = open_file['labels'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
-       			
-       			yield (data_minibatch_train, labels_minibatch_train)
-
-		open_file.close()
-
-def minibatch_generator_valid(dataset_filename = 'DEAP_dataset_valid.hdf', dataset_size = 80640*0.2, minibatch_size = 32): #80640 = 32 sub x 63 segments/trial x 40 trials		
-	
-	number_of_slices = int(np.ceil(dataset_size/minibatch_size))
-	
-	while True:
-		open_file = h5py.File(dataset_filename, 'r')
-
-		for i in xrange(0, number_of_slices):
-			data_minibatch_valid = open_file['data'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
-			labels_minibatch_valid = open_file['labels'][i*minibatch_size:min((i+1)*minibatch_size, dataset_size)]
-       			
-       			yield (data_minibatch_valid, labels_minibatch_valid)
-
-		open_file.close()				
 
 if __name__ == '__main__':
 

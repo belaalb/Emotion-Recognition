@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 class TrainLoop(object):
 
-	def __init__(self, model, optimizer, train_loader, valid_loader, checkpoint_path = None, checkpoint_epoch = None, cuda = True):
+	def __init__(self, model, optimizer, generator, checkpoint_path = None, checkpoint_epoch = None, cuda = True):
 		
 		if checkpoint_path is None:
 
@@ -27,15 +27,14 @@ class TrainLoop(object):
 
 			self.model = model
 			self.optimizer = optimizer
-			self.train_loader = train_loader
-			self.valid_loader = valid_loader
+			self.generator = generator
 			self.history = {'train_loss': [], 'valid_loss': []}
 			self.total_iters = 0
 			self.cur_epoch = 0
 			self.its_without_improv = 0
 
 		else:
-			self.load_checkpoint(self.save_epoch_fmt.format.(checkpoint_epoch))
+			self.load_checkpoint(self.save_epoch_fmt.format(checkpoint_epoch))
 
 		if self.cuda_mode:
 			self.model.cuda()
@@ -45,20 +44,20 @@ class TrainLoop(object):
 
 		# Set up
 		if not os.path.isdir(self.checkpoint_path):
-		os.mkdir(self.checkpoint_path)
+			os.mkdir(self.checkpoint_path)
 
 		last_val_loss = float('inf')
 
 		while (self.cur_epoch < n_epochs) and (self.its_without_improv < patience):
 			print('Epoch {}/{}'.format(epoch+1, n_epochs))
-			train_iter = tqdm(enumerate(self.train_loader))
+			train_iter = tqdm(enumerate(self.generator.minibatch_generator_train()))
 			self.history['train_loss'].append([])
 
 			train_loss
 			for t, batch in train_iter:
 
 				train_loss = self.train_step(batch, tl_delay)
-				self.history['train_loss'].append(train_loss)
+				self.history['train_loss'].append(self.generator.minibatch_generator_valid()
 				self.total_iters += 1
 				if save_every is not None:
 					if self.total_iters % save_every == 0:
@@ -82,7 +81,7 @@ class TrainLoop(object):
 
 			self.checkpointing()
 
-			if val_loss < last_val_loss
+			if val_loss < last_val_loss:
 				self.its_without_improv = 0
 
 			else:
