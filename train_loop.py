@@ -1,4 +1,5 @@
 from torch.autograd import Variable
+import torch
 
 import numpy as np
 import pickle
@@ -18,6 +19,9 @@ class TrainLoop(object):
 
 		else:
 			self.checkpoint_path = checkpoint_path
+			if not os.path.isdir(self.checkpoint_path):
+				os.mkdir(self.checkpoint_path)
+	
 
 		self.save_every_fmt = os.path.join(self.checkpoint_path, 'checkpoint_{}it.pt')
 		self.save_epoch_fmt = os.path.join(self.checkpoint_path, 'checkpoint_{}ep.pt')
@@ -36,27 +40,19 @@ class TrainLoop(object):
 		else:
 			self.load_checkpoint(self.save_epoch_fmt.format(checkpoint_epoch))
 
-		if self.cuda_mode:
-			self.model.cuda()
 
 	def train(self, n_epochs = 1, patience = 100, n_workers = 1, tl_delay = 1, save_every = None):
 		# Note: Logging expects the losses to be divided by the batch size
 
-		# Set up
-		if not os.path.isdir(self.checkpoint_path):
-			os.mkdir(self.checkpoint_path)
-
 		last_val_loss = float('inf')
 
 		while (self.cur_epoch < n_epochs) and (self.its_without_improv < patience):
-			print('Epoch {}/{}'.format(epoch+1, n_epochs))
+			print('Epoch {}/{}'.format(self.cur_epoch+1, n_epochs))
 			train_iter = tqdm(enumerate(self.generator.minibatch_generator_train()))
-			self.history['train_loss'].append([])
 
-			train_loss
 			for t, batch in train_iter:
 
-				train_loss = self.train_step(batch, tl_delay)
+				train_loss = self.train_step(batch)
 				self.history['train_loss'].append(self.generator.minibatch_generator_valid())
 				self.total_iters += 1
 				if save_every is not None:
@@ -77,9 +73,9 @@ class TrainLoop(object):
 			
 			self.history['valid_loss'].append(val_loss)
 
-			self.cur_epoch += 1
-
 			self.checkpointing()
+
+			self.cur_epoch += 1
 
 			if val_loss < last_val_loss:
 				self.its_without_improv = 0
@@ -87,44 +83,51 @@ class TrainLoop(object):
 			else:
 				self.its_without_improv += 1
 
+			last_val_loss = val_loss	
+
 		# saving final models
 		print('Saving final model...')
 
 		torch.save(self.model.state_dict(), './model1.pt')
 
 	def train_step(self, batch):
+
+		self.model.train()
+		
 		x, y = batch
 
 		x = Variable(x)
-		y = Variable(y, requires_grad=False)
+		y = Variable(y, requires_grad = False)
 
 		if self.cuda_mode:
-			x.cuda()
-			y.cuda()
+			x = x.cuda()
+			y = y.cuda()
 
-		out = model.forward(x)
+		out = self.model.forward(x)
 
-		loss = np.mean(torch.nn.functional.pairwise_distance(out, y))
+		loss = torch.mean(torch.nn.functional.pairwise_distance(out, y))
 
-		self.optimizer().zero_grad()
+		self.optimizer.zero_grad()
 		loss.backward()
 		self.optimizer.step()
 
 		return loss.data[0]
 		
 	def valid(self, batch):
+
+		self.model.eval()
 		
 		x, y = batch
-		x = Variable(x1, requires_grad = False)
+		x = Variable(x, requires_grad = False)
 		y = Variable(y, requires_grad = False)
 
 		if self.cuda_mode:
-			x.cuda()
-			y.cuda()
+			x = x.cuda()
+			y = y.cuda()
 
 		out = model.forward(x)
 
-		loss = np.mean(torch.nn.functional.pairwise_distance(out, y))			#checar
+		loss = torch.nn.functional.pairwise_distance(out, y)			#checar
 		
 		return loss.data[0]
 

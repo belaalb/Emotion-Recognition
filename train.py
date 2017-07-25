@@ -34,12 +34,12 @@ if args.cuda:
 model = model.model()
 
 if args.cuda:
-	model.cuda()
+	model = torch.nn.DataParallel(model).cuda()
 
-optimizer = torch.optim.Adam(model.params(), lr = args.lr, weight_decay = args.l2)
+optimizer = torch.optim.Adam(model.parameters(), lr = args.lr, weight_decay = args.l2)
 
 trainer = TrainLoop(model, optimizer, generator, checkpoint_path = args.checkpoint_path, checkpoint_epoch = args.checkpoint_epoch, cuda = args.cuda)
 
 print('Cuda Mode is: {}'.format(args.cuda))
 
-trainer.train(n_epochs = args.epochs, patience = args.patience, tl_delay = args.tl_delay, save_every = args.save_every)
+trainer.train(n_epochs = args.epochs, patience = args.patience, save_every = args.save_every)
