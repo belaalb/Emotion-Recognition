@@ -34,7 +34,8 @@ if args.cuda:
 model = model.model()
 
 if args.cuda:
-	model = torch.nn.DataParallel(model).cuda()
+	#model = torch.nn.DataParallel(model).cuda()
+	model = model.cuda()
 
 optimizer = torch.optim.Adam(model.parameters(), lr = args.lr, weight_decay = args.l2)
 

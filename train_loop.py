@@ -50,10 +50,12 @@ class TrainLoop(object):
 			print('Epoch {}/{}'.format(self.cur_epoch+1, n_epochs))
 			train_iter = tqdm(enumerate(self.generator.minibatch_generator_train()))
 
+			print(self.cur_epoch)
+
 			for t, batch in train_iter:
 
 				train_loss = self.train_step(batch)
-				self.history['train_loss'].append(self.generator.minibatch_generator_valid())
+				self.history['train_loss'].append(train_loss)
 				self.total_iters += 1
 				if save_every is not None:
 					if self.total_iters % save_every == 0:
@@ -63,8 +65,8 @@ class TrainLoop(object):
 			val_loss = 0.0
 			n_val_samples = 0
 
-			for t, batch in enumerate(self.valid_loader):
-				val_loss += self.valid(batch, tl_delay)
+			for t, batch in enumerate(self.generator.minibatch_generator_valid()):
+				val_loss += self.valid(batch)
 				n_val_samples += batch.shape[0]
 
 			val_loss /= n_val_samples	
@@ -95,6 +97,9 @@ class TrainLoop(object):
 		self.model.train()
 		
 		x, y = batch
+		print('\n')
+		print(x.size())
+		print(y.size())
 
 		x = Variable(x)
 		y = Variable(y, requires_grad = False)

@@ -12,7 +12,7 @@ class minibatch_generator:
 		
 		self.dataset_filename = dataset_filename
 		self.dataset_filename_train = self.dataset_filename + "_train.hdf"
-		self.dataset_filename_train = self.dataset_filename + "_valid.hdf"
+		self.dataset_filename_valid = self.dataset_filename + "_valid.hdf"
 		self.dataset_size = dataset_size
 		self.train_prop = 0.7
 		self.valid_prop = 0.2
@@ -25,10 +25,12 @@ class minibatch_generator:
 
 		while True:
 			open_file = h5py.File(self.dataset_filename_train, 'r')
+			print(open_file['data'].shape)
+			print(open_file['labels'].shape)
 
 			for i in xrange(0, number_of_slices):
-				data_minibatch_train = open_file['data'][i*self.minibatch_size:min((i + 1)*self.minibatch_size, self.dataset_size)]
-				labels_minibatch_train = open_file['labels'][i*self.minibatch_size:min((i + 1)*self.minibatch_size, self.dataset_size)]
+				data_minibatch_train = open_file['data'][i*self.minibatch_size:min((i + 1)*self.minibatch_size, self.dataset_size*0.7)]
+				labels_minibatch_train = open_file['labels'][i*self.minibatch_size:min((i + 1)*self.minibatch_size, self.dataset_size*0.7)]
        			
 				data_minibatch_train = torch.from_numpy(data_minibatch_train)
 				data_minibatch_train = data_minibatch_train.float()
@@ -48,8 +50,8 @@ class minibatch_generator:
 			open_file = h5py.File(self.dataset_filename_valid, 'r')
 
 			for i in xrange(0, number_of_slices):
-				data_minibatch_valid = open_file['data'][i*self.minibatch_size:min((i + 1)*self.minibatch_size, self.dataset_size)]
-				labels_minibatch_valid = open_file['labels'][i*self.minibatch_size:min((i + 1)*self.minibatch_size, self.dataset_size)]
+				data_minibatch_valid = open_file['data'][i*self.minibatch_size:min((i + 1)*self.minibatch_size, self.dataset_size*0.9)]
+				labels_minibatch_valid = open_file['labels'][i*self.minibatch_size:min((i + 1)*self.minibatch_size, self.dataset_7size*0.9)]
 
 				data_minibatch_valid = torch.from_numpy(data_minibatch_valid)
 				data_minibatch_valid = data_minibatch_valid.float()
