@@ -66,8 +66,9 @@ class TrainLoop(object):
 			n_val_samples = 0
 
 			for t, batch in enumerate(self.generator.minibatch_generator_valid()):
-				val_loss += self.valid(batch)
-				n_val_samples += batch.shape[0]
+				loss = self.valid(batch)
+				val_loss = val_loss + loss
+				n_val_samples += batch[0].size()[0]
 
 			val_loss /= n_val_samples	
 			
@@ -130,11 +131,12 @@ class TrainLoop(object):
 			x = x.cuda()
 			y = y.cuda()
 
-		out = model.forward(x)
-
+		out = self.model.forward(x)
 		loss = torch.nn.functional.pairwise_distance(out, y)			#checar
-		
-		return loss.data[0]
+
+		loss_return = torch.sum(loss.data)							# If sum receives: i) Tensor (loss.data), it returns a float; ii) Variable (loss), it returns a tensor
+
+		return loss_return
 
 	def checkpointing(self):
 		
@@ -146,7 +148,7 @@ class TrainLoop(object):
 		'total_iters': self.total_iters,
 		'cur_epoch': self.cur_epoch,
 		'its_without_improve': self.its_without_improv}
-		torch.save(ckpt, self.save_epoch_fmt.format(1, epoch))
+		torch.save(ckpt, self.save_epoch_fmt.format(self.cur_epoch))
 
 	def load_checkpoint(self, ckpt):
 
