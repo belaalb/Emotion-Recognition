@@ -76,7 +76,9 @@ class TrainLoop(object):
 			
 			self.history['valid_loss'].append(val_loss)
 
-			self.checkpointing()
+			if (self.cur_epoch%50 == 0):
+
+				self.checkpointing()
 
 			self.cur_epoch += 1
 
