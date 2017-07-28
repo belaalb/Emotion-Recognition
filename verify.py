@@ -22,12 +22,12 @@ def load_checkpoint(ckpt):
 		cur_epoch = ckpt['cur_epoch']
 		its_without_improv = ckpt['its_without_improve']
 
-		plt.plot(history['valid_loss'])
-		#plt.plot(history['train_loss'])
+		#plt.plot(history['valid_loss'])
+		plt.plot(history['train_loss'])
 
 		plt.show()
 
 if __name__ == '__main__':
 
-	load_checkpoint('checkpoint_50ep.pt')		
+	load_checkpoint('checkpoint_100ep.pt')		
 
