@@ -31,11 +31,60 @@ class model(nn.Module):
 		self.conv2_1_eeg = nn.Conv1d(64, 128, kernel_size = 16)		# 98 - 16 + 1 = 83
 		self.conv2_2_eeg = nn.Conv1d(128, 128, kernel_size = 16)	# 83 - 16 + 1 = 68
 		self.conv3_1_eeg = nn.Conv1d(128, 256, kernel_size = 16)	# 68 - 16 + 1 = 53
-		self.fc1_eeg = nn.Linear(53*256, 128)
-		self.fc2_eeg = nn.Linear(128, 64)							# Representation to be concatenated
+		self.conv3_2_eeg = nn.Conv1d(256, 64, kernel_size = 16)		# 53 - 16 + 1 = 38
+		self.conv4_1_eeg = nn.Conv1d(64, 64, kernel_size = 16)		# 38 - 16 + 1 = 23
+		self.conv4_2_eeg = nn.Conv1d(64, 16, kernel_size = 16)		# 23 - 16 + 1 = 8
+		self.fc1_eeg = nn.Linear(16*8, 48)
+		self.fc2_eeg = nn.Linear(48, 16)							# Representation to be concatenated
 
-		# EOG
+		# EOG network
+		self.conv1_1_eog = nn.Conv1d(2, 16, kernel_size = 16)		# 128 - 16 + 1 = 113
+		self.conv2_1_eog = nn.Conv1d(16, 64, kernel_size = 16)		# 113 - 16 + 1 = 98
+		self.conv3_1_eog = nn.Conv1d(64, 128, kernel_size = 16)		# 98 - 16 + 1 = 83
+		self.conv3_2_eog = nn.Conv1d(128, 128, kernel_size = 16)	# 83 - 16 + 1 = 68
+		self.conv4_1_eog = nn.Conv1d(128, 256, kernel_size = 16)	# 68 - 16 + 1 = 53
+		self.conv5_1_eog = nn.Conv1d(256, 64, kernel_size = 16)		# 53 - 16 + 1 = 38
+		self.conv5_2_eog = nn.Conv1d(64, 64, kernel_size = 16)		# 38 - 16 + 1 = 23
+		self.conv6_1_eog = nn.Conv1d(64, 16, kernel_size = 16)		# 23 - 16 + 1 = 8
+		self.fc1_eog = nn.Linear(16*8, 48)
+		self.fc2_eog = nn.Linear(48, 16)							# Representation to be concatenated
+
+		# EMG network
+		self.conv1_1_emg = nn.Conv1d(2, 16, kernel_size = 16)		# 128 - 16 + 1 = 113
+		self.conv2_1_emg = nn.Conv1d(16, 64, kernel_size = 16)		# 113 - 16 + 1 = 98
+		self.conv3_1_emg = nn.Conv1d(64, 128, kernel_size = 16)		# 98 - 16 + 1 = 83
+		self.conv3_2_emg = nn.Conv1d(128, 128, kernel_size = 16)	# 83 - 16 + 1 = 68
+		self.conv4_1_emg = nn.Conv1d(128, 256, kernel_size = 16)	# 68 - 16 + 1 = 53
+		self.conv5_1_emg = nn.Conv1d(256, 64, kernel_size = 16)		# 53 - 16 + 1 = 38
+		self.conv5_2_emg = nn.Conv1d(64, 64, kernel_size = 16)		# 38 - 16 + 1 = 23
+		self.conv6_1_emg = nn.Conv1d(64, 16, kernel_size = 16)		# 23 - 16 + 1 = 8
+		self.fc1_emg = nn.Linear(16*8, 48)
+		self.fc2_emg = nn.Linear(48, 16)							# Representation to be concatenated
 		
+		# Resp and PPG network
+		self.conv1_1_resp_ppg = nn.Conv1d(2, 16, kernel_size = 16)		# 128 - 16 + 1 = 113
+		self.conv2_1_resp_ppg = nn.Conv1d(16, 64, kernel_size = 16)		# 113 - 16 + 1 = 98
+		self.conv3_1_resp_ppg = nn.Conv1d(64, 128, kernel_size = 16)	# 98 - 16 + 1 = 83
+		self.conv3_2_resp_ppg = nn.Conv1d(128, 128, kernel_size = 16)	# 83 - 16 + 1 = 68
+		self.conv4_1_resp_ppg = nn.Conv1d(128, 256, kernel_size = 16)	# 68 - 16 + 1 = 53
+		self.conv5_1_resp_ppg = nn.Conv1d(256, 64, kernel_size = 16)	# 53 - 16 + 1 = 38
+		self.conv5_2_resp_ppg = nn.Conv1d(64, 64, kernel_size = 16)		# 38 - 16 + 1 = 23
+		self.conv6_1_resp_ppg = nn.Conv1d(64, 16, kernel_size = 16)		# 23 - 16 + 1 = 8
+		self.fc1_resp_ppg = nn.Linear(16*8, 48)
+		self.fc2_resp_ppg = nn.Linear(48, 16)							# Representation to be concatenated
+				
+
+		# Temp and GSR network
+		self.conv1_1_temp_gsr = nn.Conv1d(2, 16, kernel_size = 16)		# 128 - 16 + 1 = 113
+		self.conv2_1_temp_gsr = nn.Conv1d(16, 64, kernel_size = 16)		# 113 - 16 + 1 = 98
+		self.conv3_1_temp_gsr = nn.Conv1d(64, 128, kernel_size = 16)	# 98 - 16 + 1 = 83
+		self.conv3_2_temp_gsr = nn.Conv1d(128, 128, kernel_size = 16)	# 83 - 16 + 1 = 68
+		self.conv4_1_temp_gsr = nn.Conv1d(128, 256, kernel_size = 16)	# 68 - 16 + 1 = 53
+		self.conv5_1_temp_gsr = nn.Conv1d(256, 64, kernel_size = 16)	# 53 - 16 + 1 = 38
+		self.conv5_2_temp_gsr = nn.Conv1d(64, 64, kernel_size = 16)		# 38 - 16 + 1 = 23
+		self.conv6_1_temp_gsr = nn.Conv1d(64, 16, kernel_size = 16)		# 23 - 16 + 1 = 8
+		self.fc1_temp_gsr = nn.Linear(16*8, 48)
+		self.fc2_temp_gsr = nn.Linear(48, 16)							# Representation to be concatenated
 
 
 
@@ -82,10 +131,13 @@ class model(nn.Module):
 		x_eeg = data[:, 0:32, :]
 		x_eog = data[:, 32:34, :]
 		x_emg = data[:, 34:36, :]
+		
+		x_resp_plet = data[:, 37:38, :]
+
 		x_gsr = data[:, 36, :]
-		x_resp = data[:, 37, :]
-		x_plet = data[:, 38, :]
 		x_temp = data[:, 39, :]
+
+		x_gsr_temp = torch.cat([x_gsr, x_temp], 1)
 
 
 		x = self.conv1_1(x)
