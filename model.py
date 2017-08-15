@@ -242,6 +242,7 @@ class model(nn.Module):
 		x_emg = F.dropout(x_emg, training = self.training)
 		x_emg = self.fc2_emg(x_emg)
 
+
 		x_resp_plet = self.conv1_1_resp_plet(x_resp_plet)
 		x_resp_plet = F.dropout(x_resp_plet, training = self.training)
 		x_resp_plet = F.relu(x_resp_plet)
@@ -275,44 +276,47 @@ class model(nn.Module):
 		x_resp_plet = F.dropout(x_resp_plet, training = self.training)
 		x_resp_plet = self.fc2_resp_plet(x_resp_plet)
 
-		x_eeg = self.conv1_1_eeg(x_eeg)
-		x_eeg = F.dropout(x_eeg, training = self.training)
-		x_eeg = F.relu(x_eeg)
-		x_eeg = self.conv1_2_eeg(x_eeg)
-		x_eeg = F.dropout(x_eeg, training = self.training)
-		x_eeg = F.relu(x_eeg)
 
-		x_eeg = self.conv2_1_eeg(x_eeg)
-		x_eeg = F.dropout(x_eeg, training = self.training)
-		x_eeg = F.relu(x_eeg)
-		x_eeg = self.conv2_2_eeg(x_eeg)
-		x_eeg = F.dropout(x_eeg, training = self.training)
-		x_eeg = F.relu(x_eeg)
+		x_gsr_temp = self.conv1_1_gsr_temp(x_gsr_temp)
+		x_gsr_temp = F.dropout(x_gsr_temp, training = self.training)
+		x_gsr_temp = F.relu(x_gsr_temp)
+		x_gsr_temp = self.conv1_2_gsr_temp(x_gsr_temp)
+		x_gsr_temp = F.dropout(x_gsr_temp, training = self.training)
+		x_gsr_temp = F.relu(x_gsr_temp)
 
-		x_eeg = self.conv3_1_eeg(x_eeg)
-		x_eeg = F.dropout(x_eeg, training = self.training)
-		x_eeg = F.relu(x_eeg)
-		x_eeg = self.conv3_2_eeg(x_eeg)
-		x_eeg = F.dropout(x_eeg, training = self.training)
-		x_eeg = F.relu(x_eeg)
+		x_gsr_temp = self.conv2_1_gsr_temp(x_gsr_temp)
+		x_gsr_temp = F.dropout(x_gsr_temp, training = self.training)
+		x_gsr_temp = F.relu(x_gsr_temp)
+		x_gsr_temp = self.conv2_2_gsr_temp(x_gsr_temp)
+		x_gsr_temp = F.dropout(x_gsr_temp, training = self.training)
+		x_gsr_temp = F.relu(x_gsr_temp)
 
-		x_eeg = self.conv4_1_eeg(x_eeg)
-		x_eeg = F.dropout(x_eeg, training = self.training)
-		x_eeg = F.relu(x_eeg)
-		x_eeg = self.conv4_2_eeg(x_eeg)
-		x_eeg = F.dropout(x_eeg, training = self.training)
-		x_eeg = F.relu(x_eeg)
+		x_gsr_temp = self.conv3_1_gsr_temp(x_gsr_temp)
+		x_gsr_temp = F.dropout(x_gsr_temp, training = self.training)
+		x_gsr_temp = F.relu(x_gsr_temp)
+		x_gsr_temp = self.conv3_2_gsr_temp(x_gsr_temp)
+		x_gsr_temp = F.dropout(x_gsr_temp, training = self.training)
+		x_gsr_temp = F.relu(x_gsr_temp)
 
-		x_eeg = x_eeg.view(x_eeg.size(0), -1)
-		x_eeg = F.relu(self.fc1_eeg(x_eeg))
-		x_eeg = F.dropout(x_eeg, training = self.training)
-		x_eeg = self.fc2_eeg(x_eeg)
+		x_gsr_temp = self.conv4_1_gsr_temp(x_gsr_temp)
+		x_gsr_temp = F.dropout(x_gsr_temp, training = self.training)
+		x_gsr_temp = F.relu(x_gsr_temp)
+		x_gsr_temp = self.conv4_2_gsr_temp(x_gsr_temp)
+		x_gsr_temp = F.dropout(x_gsr_temp, training = self.training)
+		x_gsr_temp = F.relu(x_gsr_temp)
+
+		x_gsr_temp = x_gsr_temp.view(x_gsr_temp.size(0), -1)
+		x_gsr_temp = F.relu(self.fc1_gsr_temp(x_gsr_temp))
+		x_gsr_temp = F.dropout(x_gsr_temp, training = self.training)
+		x_gsr_temp = self.fc2_gsr_temp(x_gsr_temp)
 		
 
+		concatenated_output = torch.cat([x_egg, x_emg, x_eog, x_resp_plet, x_gsr_temp], 0)
+
+		output = F.sigmoid(concatenated_output)
 
 
-
-		return x
+		return output
 	
 		
 
