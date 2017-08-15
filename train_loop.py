@@ -101,8 +101,8 @@ class TrainLoop(object):
 		
 		x, y = batch
 		print('\n')
-		print(x.size())
-		print(y.size())
+		#print(x.size())
+		#print(y.size())
 
 		x = Variable(x)
 		y = Variable(y, requires_grad = False)
@@ -111,7 +111,7 @@ class TrainLoop(object):
 			x = x.cuda()
 			y = y.cuda()
 
-		out = self.model.forward(x)
+		out = self.model.forward_multimodal(x)
 
 		loss = torch.mean(torch.nn.functional.pairwise_distance(out, y))
 
@@ -133,10 +133,10 @@ class TrainLoop(object):
 			x = x.cuda()
 			y = y.cuda()
 
-		out = self.model.forward(x)
+		out = self.model.forward_multimodal(x)
 		loss = torch.nn.functional.pairwise_distance(out, y)			#checar
 
-		loss_return = torch.sum(loss.data)							# If sum receives: i) Tensor (loss.data), it returns a float; ii) Variable (loss), it returns a tensor
+		loss_return = torch.sum(loss.data)					# If sum receives: i) Tensor (loss.data), it returns a float; ii) Variable (loss), it returns a tensor
 
 		return loss_return
 
