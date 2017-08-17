@@ -35,7 +35,9 @@ class minibatch_generator:
 
 			try:
 				current_size = data_minibatch_train.size()[0]
+				#print(data_minibatch_train.size())					
 				yield (data_minibatch_train, labels_minibatch_train)
+				
 
 			except IndexError:
 				break
