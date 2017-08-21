@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-class model_arousal(nn.Module):
+class model(nn.Module):
 	
 	def __init__(self):
 
@@ -90,7 +90,7 @@ class model_arousal(nn.Module):
 
 		# Output layer
 		self.fc_out_1 = nn.Linear(16*5, 16)
-		self.fc_out_arousal = nn.Linear(16, 3)
+		self.fc_out_valence = nn.Linear(16, 3)
 
 
 	
@@ -131,7 +131,7 @@ class model_arousal(nn.Module):
 		
 		return x
 
-	def forward_multimodal_arousal(self, x):
+	def forward_multimodal(self, x):
 	
 		x_eeg = x[:, 0:32, :]
 		x_eog = x[:, 32:34, :]
@@ -346,7 +346,7 @@ class model_arousal(nn.Module):
 		output = self.fc_out_1(concatenated_output)
 		output = F.relu(output)
 		output = F.dropout(output, training = self.training)
-		output = self.fc_out_arousal(output)
+		output = self.fc_out_valence(output)
 		output = F.Softmax(output)
 
 

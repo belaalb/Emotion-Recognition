@@ -2,7 +2,7 @@ from __future__ import print_function
 import argparse
 import torch
 import torch.optim
-import model
+import model_arousal
 import utils
 from minibatch_generator import minibatch_generator
 from train_loop import TrainLoop
@@ -31,7 +31,7 @@ generator = minibatch_generator(args.minibatch_size)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-model = model.model()
+model = model_arousal.model()
 
 if args.cuda:
 	#model = torch.nn.DataParallel(model).cuda()

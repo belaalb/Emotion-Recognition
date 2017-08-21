@@ -25,18 +25,18 @@ class minibatch_generator:
 		while True:
 
 			data_minibatch_train = open_file['data'][i*self.minibatch_size:(i + 1)*self.minibatch_size]
-			labels_minibatch_train = open_file['labels'][i*self.minibatch_size:(i + 1)*self.minibatch_size]
+			labels_minibatch_arousal_train = open_file['labels_arousal'][i*self.minibatch_size:(i + 1)*self.minibatch_size]
    			
 			data_minibatch_train = torch.from_numpy(data_minibatch_train)
 			data_minibatch_train = data_minibatch_train.float()
 
-			labels_minibatch_train = torch.from_numpy(labels_minibatch_train)
-			labels_minibatch_train = labels_minibatch_train.float()
+			labels_minibatch_arousal_train = torch.from_numpy(labels_minibatch_arousal_train)
+			labels_minibatch_arousal_train = labels_minibatch_arousal_train.float()
 
 			try:
 				current_size = data_minibatch_train.size()[0]
 				#print(data_minibatch_train.size())					
-				yield (data_minibatch_train, labels_minibatch_train)
+				yield (data_minibatch_train, labels_minibatch_arousal_train)
 				
 
 			except IndexError:
