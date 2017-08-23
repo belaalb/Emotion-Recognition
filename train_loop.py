@@ -10,6 +10,9 @@ import os
 from glob import glob
 from tqdm import tqdm
 
+import gc
+
+
 class TrainLoop(object):
 
 	def __init__(self, model, optimizer, generator, checkpoint_path = None, checkpoint_epoch = None, cuda = True):
@@ -34,7 +37,7 @@ class TrainLoop(object):
 			self.model = model
 			self.optimizer = optimizer
 			self.generator = generator
-			self.history = {'train_loss': [], 'valid_loss': []}
+			self.history = {'train_loss': [], 'train_loss_avg': [], 'valid_loss': []}
 			self.total_iters = 0
 			self.cur_epoch = 0
 			self.its_without_improv = 0
@@ -61,37 +64,45 @@ class TrainLoop(object):
 			for t, batch in train_iter:
 
 				loss, acc = self.train_step(batch)
+
 				self.history['train_loss'].append(loss)	
 				
 				train_loss_sum += loss
 				self.total_iters += 1
 				
 				train_accuracy += acc
+
+				print(acc)
 				
 				if save_every is not None:
 					if self.total_iters % save_every == 0:
 						torch.save(self, self.save_every_fmt.format(self.total_iters))
+
+				
 			
 			train_loss_avg = train_loss_sum / self.total_iters  
 			print('Training loss: {}'.format(train_loss_avg))
 			self.history['train_loss_avg'].append(train_loss_avg)
 
-			train_accuracy_avg = train_accurancy / self.total_iters  
+			train_accuracy_avg = train_accuracy / self.total_iters  
 			print('Training accuracy: {}'.format(train_accuracy_avg))
 
 
 			# Validation
 			val_loss = 0.0
 			n_val_samples = 0
+			valid_accuracy = 0.0
 
 			for t, batch in enumerate(self.generator.minibatch_generator_valid()):
 				loss, acc = self.valid(batch)
 				
-				val_loss = val_loss + loss
+				val_loss += loss
 
 				valid_accuracy += acc	
 
 				n_val_samples += batch[0].size()[0]
+
+				print(acc/n_val_samples)
 
 			val_loss /= n_val_samples	
 			
@@ -141,13 +152,6 @@ class TrainLoop(object):
 		out_arousal = self.model.forward_multimodal_arousal(x)
 		#out_valence = self.model.forward_multimodal(x)
 
-		#print(type(out_arousal.data))
-		#print(type(y[:, 0].data))
-		#print(out_arousal.data.size())
-		#print(y[:, 0].data.size())
-
-		
-
 		loss = F.cross_entropy(out_arousal, y[:, 0])
 
 
@@ -157,18 +161,13 @@ class TrainLoop(object):
 
 		loss_return = torch.sum(loss.data)
 
-		#a = torch.max(out_arousal, 1)
-		#print(len(a))
-		#print(a[1])
 
-		accuracy = (torch.max(out_arousal, 1)[1] == y[:, 0]).sum()
+		accuracy = torch.mean((torch.max(out_arousal, 1)[1] == y[:, 0]).float())
 
-		#print(type(accuracy))
-
-		accuracy = accuracy.sum()
+		accuracy_return = accuracy.data
 
 
-		return loss_return, accuracy.float()
+		return loss_return, accuracy_return
 
 
 	def valid(self, batch):
@@ -188,9 +187,11 @@ class TrainLoop(object):
 
 		loss_return = torch.sum(loss.data)					# If sum receives: i) Tensor (loss.data), it returns a float; ii) Variable (loss), it returns a tensor
 
-		accuracy = (torch.max(out_arousal, 1)[1] == y[:, 0]).sum()
+		accuracy = ((torch.max(out_arousal, 1)[1] == y[:, 0]).sum()).float()
 
-		return loss_return, accuracy.float()
+		accuracy_return = accuracy.data
+
+		return loss_return, accuracy_return
 
 	def checkpointing(self):
 		
