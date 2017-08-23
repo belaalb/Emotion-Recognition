@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-class model_arousal(nn.Module):
+class model(nn.Module):
 	
 	def __init__(self):
 
@@ -347,7 +347,8 @@ class model_arousal(nn.Module):
 		output = F.relu(output)
 		output = F.dropout(output, training = self.training)
 		output = self.fc_out_arousal(output)
-		output = F.Softmax(output)
+		#print(output.size())
+		#output = F.softmax(output)
 
 
 		return output

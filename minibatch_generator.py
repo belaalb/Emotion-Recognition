@@ -25,24 +25,24 @@ class minibatch_generator:
 		while True:
 
 			data_minibatch_train = open_file['data'][i*self.minibatch_size:(i + 1)*self.minibatch_size]
-			labels_minibatch_arousal_train = open_file['labels_arousal'][i*self.minibatch_size:(i + 1)*self.minibatch_size]
+			labels_minibatch_arousal_val_train = open_file['labels_arousal_val'][i*self.minibatch_size:(i + 1)*self.minibatch_size]
    			
 			data_minibatch_train = torch.from_numpy(data_minibatch_train)
 			data_minibatch_train = data_minibatch_train.float()
 
-			labels_minibatch_arousal_train = torch.from_numpy(labels_minibatch_arousal_train)
-			labels_minibatch_arousal_train = labels_minibatch_arousal_train.float()
+			labels_minibatch_arousal_val_train = torch.from_numpy(labels_minibatch_arousal_val_train)
+			labels_minibatch_arousal_val_train = labels_minibatch_arousal_val_train.long()
 
 			try:
 				current_size = data_minibatch_train.size()[0]
 				#print(data_minibatch_train.size())					
-				yield (data_minibatch_train, labels_minibatch_arousal_train)
+				yield (data_minibatch_train, labels_minibatch_arousal_val_train)
 				
 
 			except IndexError:
 				break
  
-			if data_minibatch_train.size()[0]<self.minibatch_size:
+			if data_minibatch_train.size()[0] < self.minibatch_size:
 				break
 
 			i += 1	
@@ -60,22 +60,22 @@ class minibatch_generator:
 		while True:
 			
 			data_minibatch_valid = open_file['data'][i*self.minibatch_size:(i + 1)*self.minibatch_size]
-			labels_minibatch_valid = open_file['labels'][i*self.minibatch_size:(i + 1)*self.minibatch_size]
+			labels_minibatch_arousal_val_valid = open_file['labels_arousal_val'][i*self.minibatch_size:(i + 1)*self.minibatch_size]
 
 			data_minibatch_valid = torch.from_numpy(data_minibatch_valid)
 			data_minibatch_valid = data_minibatch_valid.float()
 
-			labels_minibatch_valid = torch.from_numpy(labels_minibatch_valid)
-			labels_minibatch_valid = labels_minibatch_valid.float()
+			labels_minibatch_arousal_val_valid = torch.from_numpy(labels_minibatch_arousal_val_valid)
+			labels_minibatch_arousal_val_valid = labels_minibatch_arousal_val_valid.int()
 			
 			try:
 				current_size = data_minibatch_valid.size()[0]
-				yield (data_minibatch_valid, labels_minibatch_valid)
+				yield (data_minibatch_valid, labels_minibatch_arousal_val_valid)
 
 			except IndexError:
 				break
  
-			if data_minibatch_valid.size()[0]<self.minibatch_size:
+			if data_minibatch_valid.size()[0] < self.minibatch_size:
 				break
 
 			i += 1   			

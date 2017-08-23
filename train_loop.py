@@ -1,5 +1,7 @@
 from torch.autograd import Variable
 import torch
+import torch.nn.functional as F
+
 
 import numpy as np
 import pickle
@@ -46,7 +48,11 @@ class TrainLoop(object):
 
 		last_val_loss = float('inf')
 
+
 		while (self.cur_epoch < n_epochs) and (self.its_without_improv < patience):
+			train_loss_sum = 0.0
+			train_accuracy = 0.0
+
 			print('Epoch {}/{}'.format(self.cur_epoch+1, n_epochs))
 			train_iter = tqdm(enumerate(self.generator.minibatch_generator_train()))
 
@@ -71,7 +77,7 @@ class TrainLoop(object):
 			self.history['train_loss_avg'].append(train_loss_avg)
 
 			train_accuracy_avg = train_accurancy / self.total_iters  
-			print('Training accuracy: {}'.format(train_accuracy))
+			print('Training accuracy: {}'.format(train_accuracy_avg))
 
 
 			# Validation
@@ -95,12 +101,11 @@ class TrainLoop(object):
 			
 			self.history['valid_loss'].append(val_loss)
 
-			train_accuracy =/ self.total_iters  
 			print('Validation accuracy: {}'.format(valid_accuracy))
 
-			if (self.cur_epoch % 50 == 0):
+			#if (self.cur_epoch % 50 == 0):
 
-				self.checkpointing()
+			#	self.checkpointing()
 
 			self.cur_epoch += 1
 
@@ -120,7 +125,7 @@ class TrainLoop(object):
 	def train_step(self, batch):
 
 		self.model.train()
-		
+			
 		x, y = batch
 		print('\n')
 		#print(x.size())
@@ -136,7 +141,15 @@ class TrainLoop(object):
 		out_arousal = self.model.forward_multimodal_arousal(x)
 		#out_valence = self.model.forward_multimodal(x)
 
-		loss = torch.nn.CrossEntropyLoss(out_arousal, y)
+		#print(type(out_arousal.data))
+		#print(type(y[:, 0].data))
+		#print(out_arousal.data.size())
+		#print(y[:, 0].data.size())
+
+		
+
+		loss = F.cross_entropy(out_arousal, y[:, 0])
+
 
 		self.optimizer.zero_grad()
 		loss.backward()
@@ -144,10 +157,18 @@ class TrainLoop(object):
 
 		loss_return = torch.sum(loss.data)
 
-    		accuracy = (out_arousal == y).sum()
+		#a = torch.max(out_arousal, 1)
+		#print(len(a))
+		#print(a[1])
+
+		accuracy = (torch.max(out_arousal, 1)[1] == y[:, 0]).sum()
+
+		#print(type(accuracy))
+
+		accuracy = accuracy.sum()
 
 
-		return loss_return, accuracy
+		return loss_return, accuracy.float()
 
 
 	def valid(self, batch):
@@ -163,13 +184,13 @@ class TrainLoop(object):
 			y = y.cuda()
 
 		out_arousal = self.model.forward_multimodal_arousal(x)
-		loss = torch.nn.CrossEntropyLoss(out_arousal, y(:, 0))			#checar
+		loss = F.cross_entropy(out_arousal, y[:, 0])			#checar
 
 		loss_return = torch.sum(loss.data)					# If sum receives: i) Tensor (loss.data), it returns a float; ii) Variable (loss), it returns a tensor
 
-		accuracy = (out_arousal == y).sum()
+		accuracy = (torch.max(out_arousal, 1)[1] == y[:, 0]).sum()
 
-		return loss_return, accuracy
+		return loss_return, accuracy.float()
 
 	def checkpointing(self):
 		

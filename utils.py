@@ -88,10 +88,9 @@ def read_hdf_processed_labels(hdf_filename = 'DEAP_dataset_train.hdf'):
 	open_file = h5py.File(hdf_filename, 'r')
 	
 	data = open_file['data']
-	labels_arousal = open_file['labels_arousal']
-	labels_val = open_file['labels_val']
+	labels_arousal_val = open_file['labels_arousal_val']
 
-	return data, labels_arousal, labels_val
+	return data, labels_arousal_val
 
 
 
@@ -116,55 +115,60 @@ def merge_shuffle_norm_split_tvt_store_as_hdf(hdf_filename_to_read = 'DEAP_datas
 	labels = labels[idxs, :]
 
 
-	labels_arousal = np.zeros([number_of_examples, 3]);
-	labels_val = np.zeros([number_of_examples, 3]);
+	labels_arousal_val = np.zeros([number_of_examples, 2]);
+	#labels_val = np.zeros([number_of_examples, 3]);
 
 
-	labels_arousal[(1 <= labels[:, 0]) & (labels[:, 0] <= 3), :] = np.array([1, 0, 0])
-	labels_arousal[(4 <= labels[:, 0]) & (labels[:, 0] <= 6), :] = np.array([0, 1, 0]) 
-	labels_arousal[(7 <= labels[:, 0]) & (labels[:, 0] <= 9), :] = np.array([0, 0, 1]) 
+	labels_arousal_val[(1 <= labels[:, 0]) & (labels[:, 0] <= 3.5), 0] = 0
+	labels_arousal_val[(3.5 < labels[:, 0]) & (labels[:, 0] <= 6.5), 0] = 1 
+	labels_arousal_val[(6.5 < labels[:, 0]) & (labels[:, 0] <= 9), 0] = 2
 	
 
-	labels_val[(1 <= labels[:, 1]) & (labels[:, 1] <= 3), :] = np.array([1, 0, 0])
-	labels_val[(4 <= labels[:, 1]) & (labels[:, 1] <= 6), :] = np.array([0, 1, 0]) 
-	labels_val[(7 <= labels[:, 1]) & (labels[:, 1] <= 9), :] = np.array([0, 0, 1])
+	labels_arousal_val[(1 <= labels[:, 1]) & (labels[:, 1] <= 3.5), 1] = 0
+	labels_arousal_val[(3.5 < labels[:, 1]) & (labels[:, 1] <= 6.5), 1] = 1 
+	labels_arousal_val[(6.5 < labels[:, 1]) & (labels[:, 1] <= 9), 1] = 2
 
 
 	data_train = data[0:int(0.7*number_of_examples), :, :]
 	data_valid = data[int(0.7*number_of_examples):int(0.9*number_of_examples), :, :]
 	data_test = data[int(0.9*number_of_examples):-1, :, :]
 	
-	labels_arousal_train = labels_arousal[0:int(0.7*number_of_examples), :]
-	labels_arousal_valid = labels_arousal[int(0.7*number_of_examples):int(0.9*number_of_examples), :]
-	labels_arousal_test = labels_arousal[int(0.9*number_of_examples):-1, :]
+	labels_arousal_val_train = labels_arousal_val[0:int(0.7*number_of_examples), :]
+	labels_arousal_val_valid = labels_arousal_val[int(0.7*number_of_examples):int(0.9*number_of_examples), :]
+	labels_arousal_val_test = labels_arousal_val[int(0.9*number_of_examples):-1, :]
 
-	labels_val_train = labels_val[0:int(0.7*number_of_examples), :]
-	labels_val_valid = labels_val[int(0.7*number_of_examples):int(0.9*number_of_examples), :]
-	labels_val_test = labels_val[int(0.9*number_of_examples):-1, :]
+	#labels_val_train = labels_val[0:int(0.7*number_of_examples), :]
+	#labels_val_valid = labels_val[int(0.7*number_of_examples):int(0.9*number_of_examples), :]
+	#labels_val_test = labels_val[int(0.9*number_of_examples):-1, :]
 	
 
 	dataset_file_train = h5py.File(hdf_filename_to_save_train, 'w')
 	dataset_train = dataset_file_train.create_dataset('data', data = data_train)
-	dataset_train = dataset_file_train.create_dataset('labels_arousal', data = labels_arousal_train)
-	dataset_train = dataset_file_train.create_dataset('labels_val', data = labels_val_train)
+	dataset_train = dataset_file_train.create_dataset('labels_arousal_val', data = labels_arousal_val_train)
+	#dataset_train = dataset_file_train.create_dataset('labels_val', data = labels_val_train)
 	dataset_file_train.close()
 
 	dataset_file_valid = h5py.File(hdf_filename_to_save_valid, 'w')
 	dataset_valid = dataset_file_valid.create_dataset('data', data = data_valid)
-	dataset_valid = dataset_file_valid.create_dataset('labels_arousal', data = labels_arousal_valid)
-	dataset_valid = dataset_file_valid.create_dataset('labels_val', data = labels_val_valid)
+	dataset_valid = dataset_file_valid.create_dataset('labels_arousal_val', data = labels_arousal_val_valid)
+	#dataset_valid = dataset_file_valid.create_dataset('labels_val', data = labels_val_valid)
 	dataset_file_valid.close()
 
 	dataset_file_test = h5py.File(hdf_filename_to_save_test, 'w')
 	dataset_test = dataset_file_test.create_dataset('data', data = data_test)
-	dataset_test = dataset_file_test.create_dataset('labels_arousal', data = labels_arousal_test)
-	dataset_test = dataset_file_test.create_dataset('labels_val', data = labels_val_test)
+	dataset_test = dataset_file_test.create_dataset('labels_arousal_val', data = labels_arousal_val_test)
+	#dataset_test = dataset_file_test.create_dataset('labels_val', data = labels_val_test)
 	dataset_file_test.close()
 
 
 if __name__ == '__main__':
 
-	data , labels_arousal, labels_val = read_hdf_processed_labels('DEAP_dataset_train.hdf')
-	print(data.shape)
-	print(labels_arousal.shape)
-	print(labels_val.shape)
+	#merge_shuffle_norm_split_tvt_store_as_hdf()
+	
+	data , labels_arousal_val = read_hdf_processed_labels('DEAP_dataset_train.hdf')
+	#print(data.shape)
+	#print(labels_arousal.shape)
+	#print(labels_val.shape)
+	
+	print(labels_arousal_val[234:255, 0])
+	print(labels_arousal_val[234:255, 1])
