@@ -37,7 +37,7 @@ class TrainLoop(object):
 			self.model = model
 			self.optimizer = optimizer
 			self.generator = generator
-			self.history = {'train_loss': [], 'train_loss_avg': [], 'valid_loss': []}
+			self.history = {'train_loss': [], 'train_loss_avg': [], 'valid_loss': [], 'valid_loss_avg': []}
 			self.total_iters = 0
 			self.cur_epoch = 0
 			self.its_without_improv = 0
@@ -89,44 +89,39 @@ class TrainLoop(object):
 
 
 			# Validation
-			val_loss = 0.0
-			n_val_samples = 0
+			valid_loss_sum = 0.0
+			n_valid_iterations = 0
 			valid_accuracy = 0.0
 
 			for t, batch in enumerate(self.generator.minibatch_generator_valid()):
+				
 				loss, acc = self.valid(batch)
 				
-				val_loss += loss
+				self.history['valid_loss'].append(loss)
+
+				valid_loss_sum += loss
+				n_valid_iterations += 1
 
 				valid_accuracy += acc	
 
-				n_val_samples += batch[0].size()[0]
+				print(acc)
 
-				print(acc/n_val_samples)
+			valid_loss_avg = valid_loss_sum / n_valid_iterations	
+			print('Validation loss: {}'.format(valid_loss_avg))
+			self.history['valid_loss_avg'].append(valid_loss_avg)
 
-			val_loss /= n_val_samples	
-			
-			valid_accuracy /= n_val_samples 	
-			
-			print('Validation loss: {}'.format(val_loss))
-			
-			self.history['valid_loss'].append(val_loss)
-
-			print('Validation accuracy: {}'.format(valid_accuracy))
-
-			#if (self.cur_epoch % 50 == 0):
-
-			#	self.checkpointing()
+			valid_accuracy_avg = valid_accuracy / n_valid_iterations 	
+			print('Validation accuracy: {}'.format(valid_accuracy_avg))
 
 			self.cur_epoch += 1
 
-			if val_loss < last_val_loss:
+			if valid_loss_avg < last_val_loss:
 				self.its_without_improv = 0
 
 			else:
 				self.its_without_improv += 1
 
-			last_val_loss = val_loss	
+			last_val_loss = valid_loss_avg	
 
 		# saving final models
 		print('Saving final model...')
@@ -187,7 +182,7 @@ class TrainLoop(object):
 
 		loss_return = torch.sum(loss.data)					# If sum receives: i) Tensor (loss.data), it returns a float; ii) Variable (loss), it returns a tensor
 
-		accuracy = ((torch.max(out_arousal, 1)[1] == y[:, 0]).sum()).float()
+		accuracy = torch.mean((torch.max(out_arousal, 1)[1] == y[:, 0]).float())
 
 		accuracy_return = accuracy.data
 
