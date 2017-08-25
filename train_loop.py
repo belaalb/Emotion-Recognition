@@ -37,7 +37,7 @@ class TrainLoop(object):
 			self.model = model
 			self.optimizer = optimizer
 			self.generator = generator
-			self.history = {'train_loss': [], 'train_loss_avg': [], 'valid_loss': [], 'valid_loss_avg': []}
+			self.history = {'train_loss': [], 'train_loss_avg': [], 'train_accuracy_avg': [], 'valid_loss': [], 'valid_loss_avg': [], 'valid_accuracy_avg': []}
 			self.total_iters = 0
 			self.cur_epoch = 0
 			self.its_without_improv = 0
@@ -86,7 +86,7 @@ class TrainLoop(object):
 
 			train_accuracy_avg = train_accuracy / self.total_iters  
 			print('Training accuracy: {}'.format(train_accuracy_avg))
-
+			self.history['train_accuracy_avg'].append(train_accuracy_avg)
 
 			# Validation
 			valid_loss_sum = 0.0
@@ -112,6 +112,10 @@ class TrainLoop(object):
 
 			valid_accuracy_avg = valid_accuracy / n_valid_iterations 	
 			print('Validation accuracy: {}'.format(valid_accuracy_avg))
+			self.history['valid_accuracy_avg'].append(valid_accuracy_avg)
+
+			if (self.cur_epoch % 20 == 0):
+				self.checkpointing()
 
 			self.cur_epoch += 1
 
