@@ -151,7 +151,7 @@ class TrainLoop(object):
 		out_arousal = self.model.forward_multimodal_arousal(x)
 		#out_valence = self.model.forward_multimodal(x)
 
-		loss = F.cross_entropy(out_arousal, y[:, 0])
+		loss = F.cross_entropy(out_arousal, y[:, 1])
 
 
 		self.optimizer.zero_grad()
@@ -160,6 +160,9 @@ class TrainLoop(object):
 
 		loss_return = torch.sum(loss.data)
 
+		#print(y[:, 0])
+
+		#print(torch.max(out_arousal, 1)[1])
 
 		accuracy = torch.mean((torch.max(out_arousal, 1)[1] == y[:, 0]).float())
 

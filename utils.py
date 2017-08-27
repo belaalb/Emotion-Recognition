@@ -163,12 +163,12 @@ def merge_shuffle_norm_split_tvt_store_as_hdf(hdf_filename_to_read = 'DEAP_datas
 
 if __name__ == '__main__':
 
-	#merge_shuffle_norm_split_tvt_store_as_hdf()
+	merge_shuffle_norm_split_tvt_store_as_hdf()
 	
-	data , labels_arousal_val = read_hdf_processed_labels('DEAP_dataset_train.hdf')
+	#data , labels_arousal_val = read_hdf_processed_labels('DEAP_dataset_train.hdf')
 	#print(data.shape)
 	#print(labels_arousal.shape)
 	#print(labels_val.shape)
 	
-	print(labels_arousal_val[234:255, 0])
-	print(labels_arousal_val[234:255, 1])
+	#print(labels_arousal_val[234:255, 0])
+	#print(labels_arousal_val[234:255, 1])

@@ -8,7 +8,7 @@ import torch
 
 class minibatch_generator:
 
-	def __init__(self, minibatch_size = 32, dataset_filename = "DEAP_dataset"):
+	def __init__(self, minibatch_size = 32, dataset_filename = "/home/isabela/Desktop/emot_recog_class/DEAP_dataset"):
 		
 		self.dataset_filename = dataset_filename
 		self.dataset_filename_train = self.dataset_filename + "_train.hdf"
@@ -16,7 +16,7 @@ class minibatch_generator:
 		self.minibatch_size = minibatch_size
 
 
-	def minibatch_generator_train(self): #80640 = 32 sub x 63 segments/trial x 40 trials		
+	def minibatch_generator_train(self): #80640 = 32 sub x 60 segments/trial x 40 trials		
 	
 		open_file = h5py.File(self.dataset_filename_train, 'r')
 
@@ -51,7 +51,7 @@ class minibatch_generator:
 
 
 
-	def minibatch_generator_valid(self): #80640 = 32 sub x 63 segments/trial x 40 trials		
+	def minibatch_generator_valid(self): #80640 = 32 sub x 60 segments/trial x 40 trials		
 	
 		open_file = h5py.File(self.dataset_filename_valid, 'r')
 
@@ -66,7 +66,7 @@ class minibatch_generator:
 			data_minibatch_valid = data_minibatch_valid.float()
 
 			labels_minibatch_arousal_val_valid = torch.from_numpy(labels_minibatch_arousal_val_valid)
-			labels_minibatch_arousal_val_valid = labels_minibatch_arousal_val_valid.int()
+			labels_minibatch_arousal_val_valid = labels_minibatch_arousal_val_valid.long()
 			
 			try:
 				current_size = data_minibatch_valid.size()[0]
