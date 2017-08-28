@@ -20,8 +20,15 @@ def load_dataset_per_subject(sub = 1, main_dir = 'data_preprocessed_python/'):
 	return data, labels
 
 
-def split_data_per_subject(sub = 1, segment_duration = 1, sampling_rate = 128, main_dir = 'data_preprocessed_python/'):
-	
+def split_data_per_subject(sub = 1, segment_duration = 1, sampling_rate = 128, main_dir = '/home/isabela/emot_recog_class/data_preprocessed_python/'):
+
+	'''
+	TO DO:
+	- Increase window length
+	- Overlapping windows
+ 
+	'''
+
 	data, labels = load_dataset_per_subject(sub, main_dir)
 	number_of_samples = segment_duration*sampling_rate
 	number_of_trials = data.shape[0]
@@ -73,26 +80,6 @@ def create_hdf(subjects_number = 32, hdf_filename = 'DEAP_dataset_subjects_list.
 
 
 
-def read_hdf(hdf_filename = 'DEAP_dataset_subjects_list.hdf'):
-
-	open_file = h5py.File(hdf_filename, 'r')
-	
-	data = open_file['data']
-	labels = open_file['labels']
-
-
-	return data, labels
-
-def read_hdf_processed_labels(hdf_filename = 'DEAP_dataset_train.hdf'):
-
-	open_file = h5py.File(hdf_filename, 'r')
-	
-	data = open_file['data']
-	labels_arousal_val = open_file['labels_arousal_val']
-
-	return data, labels_arousal_val
-
-
 
 def merge_shuffle_norm_split_tvt_store_as_hdf(hdf_filename_to_read = 'DEAP_dataset_subjects_list.hdf', hdf_filename_to_save_train = 'DEAP_dataset_train.hdf', hdf_filename_to_save_valid = 'DEAP_dataset_valid.hdf', hdf_filename_to_save_test = 'DEAP_dataset_test.hdf'):
 
@@ -136,39 +123,105 @@ def merge_shuffle_norm_split_tvt_store_as_hdf(hdf_filename_to_read = 'DEAP_datas
 	labels_arousal_val_train = labels_arousal_val[0:int(0.7*number_of_examples), :]
 	labels_arousal_val_valid = labels_arousal_val[int(0.7*number_of_examples):int(0.9*number_of_examples), :]
 	labels_arousal_val_test = labels_arousal_val[int(0.9*number_of_examples):-1, :]
-
-	#labels_val_train = labels_val[0:int(0.7*number_of_examples), :]
-	#labels_val_valid = labels_val[int(0.7*number_of_examples):int(0.9*number_of_examples), :]
-	#labels_val_test = labels_val[int(0.9*number_of_examples):-1, :]
 	
-
 	dataset_file_train = h5py.File(hdf_filename_to_save_train, 'w')
 	dataset_train = dataset_file_train.create_dataset('data', data = data_train)
 	dataset_train = dataset_file_train.create_dataset('labels_arousal_val', data = labels_arousal_val_train)
-	#dataset_train = dataset_file_train.create_dataset('labels_val', data = labels_val_train)
 	dataset_file_train.close()
 
 	dataset_file_valid = h5py.File(hdf_filename_to_save_valid, 'w')
 	dataset_valid = dataset_file_valid.create_dataset('data', data = data_valid)
 	dataset_valid = dataset_file_valid.create_dataset('labels_arousal_val', data = labels_arousal_val_valid)
-	#dataset_valid = dataset_file_valid.create_dataset('labels_val', data = labels_val_valid)
 	dataset_file_valid.close()
 
 	dataset_file_test = h5py.File(hdf_filename_to_save_test, 'w')
 	dataset_test = dataset_file_test.create_dataset('data', data = data_test)
 	dataset_test = dataset_file_test.create_dataset('labels_arousal_val', data = labels_arousal_val_test)
-	#dataset_test = dataset_file_test.create_dataset('labels_val', data = labels_val_test)
 	dataset_file_test.close()
+
+
+def read_hdf(hdf_filename = 'DEAP_dataset_subjects_list.hdf'):
+
+	open_file = h5py.File(hdf_filename, 'r')
+	
+	data = open_file['data']
+	labels = open_file['labels']
+
+
+	return data, labels
+
+def read_hdf_processed_labels(hdf_filename = 'DEAP_dataset_train.hdf'):
+
+	open_file = h5py.File(hdf_filename, 'r')
+	
+	data = open_file['data']
+	labels_arousal_val = open_file['labels_arousal_val']
+
+	#open_file.close()
+
+	return data, labels_arousal_val
+
+def read_hdf_processed_labels_return_size(hdf_filename = 'DEAP_dataset_train.hdf'):
+
+	open_file = h5py.File(hdf_filename, 'r')
+	
+	data = open_file['data']
+	length = data.shape[0]	
+
+	open_file.close()
+
+	return length
+
+def read_hdf_processed_labels_idx(idx, hdf_filename = 'DEAP_dataset_train.hdf'):
+
+	open_file = h5py.File(hdf_filename, 'r')
+	
+	data = open_file['data'][idx]
+	labels_arousal_val = open_file['labels_arousal_val'][idx]
+
+	open_file.close()
+
+	return data, labels_arousal_val
+
+def calculate_weights(root = "/home/isabela/Desktop/emot_recog_class/DEAP_dataset", step = "train"):
+
+	if (step == "train"):
+		dataset_filename = root + "_train.hdf"
+	elif (step == "valid"):
+		dataset_filename = root + "_valid.hdf"
+	else:
+		dataset_filename = root + "_test.hdf"
+
+	_, labels_arousal_val = read_hdf_processed_labels(dataset_filename)
+
+	p0 = sum(labels_arousal_val[:, 0] == 0) / labels_arousal_val.shape[0] 	
+	p1 = sum(labels_arousal_val[:, 0] == 1) / labels_arousal_val.shape[0]
+	p2 = sum(labels_arousal_val[:, 0] == 2) / labels_arousal_val.shape[0]
+
+	probs = [p0, p1, p2]
+
+	reciprocal_weights = [0] * len(labels_arousal_val) 
+
+	for idx in range(len(labels_arousal_val)):
+		reciprocal_weights[idx] = probs[int(labels_arousal_val[idx, 0])]
+
+	length = len(labels_arousal_val)
+
+	return reciprocal_weights, length
+
 
 
 if __name__ == '__main__':
 
-	merge_shuffle_norm_split_tvt_store_as_hdf()
+	#merge_shuffle_norm_split_tvt_store_as_hdf()
 	
-	#data , labels_arousal_val = read_hdf_processed_labels('DEAP_dataset_train.hdf')
+	data, labels_arousal_val = read_hdf_processed_labels('/home/isabela/Desktop/emot_recog_class/DEAP_dataset_train.hdf')
 	#print(data.shape)
 	#print(labels_arousal.shape)
 	#print(labels_val.shape)
-	
-	#print(labels_arousal_val[234:255, 0])
+
+
+	print('Label 0', sum(labels_arousal_val[:, 0] == 0))	
+	print('Label 1', sum(labels_arousal_val[:, 0] == 1))
+	print('Label 2', sum(labels_arousal_val[:, 0] == 2))
 	#print(labels_arousal_val[234:255, 1])

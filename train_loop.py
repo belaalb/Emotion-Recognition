@@ -1,7 +1,9 @@
 from torch.autograd import Variable
 import torch
 import torch.nn.functional as F
-
+from DeapDataset import DeapDataset
+from torch.utils.data import DataLoader
+import utils
 
 import numpy as np
 import pickle
@@ -15,7 +17,7 @@ import gc
 
 class TrainLoop(object):
 
-	def __init__(self, model, optimizer, generator, checkpoint_path = None, checkpoint_epoch = None, cuda = True):
+	def __init__(self, model, optimizer, minibatch_size, checkpoint_path = None, checkpoint_epoch = None, cuda = True):
 		
 		if checkpoint_path is None:
 
@@ -33,10 +35,11 @@ class TrainLoop(object):
 		self.save_epoch_fmt = os.path.join(self.checkpoint_path, 'checkpoint_{}ep.pt')
 		self.cuda_mode = cuda
 
+
 		if checkpoint_epoch is None:
 			self.model = model
 			self.optimizer = optimizer
-			self.generator = generator
+			self.minibatch_size = minibatch_size
 			self.history = {'train_loss': [], 'train_loss_avg': [], 'train_accuracy_avg': [], 'valid_loss': [], 'valid_loss_avg': [], 'valid_accuracy_avg': []}
 			self.total_iters = 0
 			self.cur_epoch = 0
@@ -44,6 +47,18 @@ class TrainLoop(object):
 
 		else:
 			self.load_checkpoint(self.save_epoch_fmt.format(checkpoint_epoch))
+
+
+		reciprocal_weights_train, length_train = utils.calculate_weights(step = 'train')
+		self.weight_train = 1 / torch.DoubleTensor(reciprocal_weights_train)
+		self.dataset_train = DeapDataset(step = 'train')
+		self.sampler_train = torch.utils.data.sampler.WeightedRandomSampler(self.weight_train, length_train)
+		self.dataloader_train = DataLoader(self.dataset_train, self.minibatch_size, shuffle = False, sampler = self.sampler_train)
+
+		self.dataset_valid = DeapDataset(step = 'valid')
+		self.dataloader_valid = DataLoader(self.dataset_valid, self.minibatch_size, shuffle = False)
+
+
 
 
 	def train(self, n_epochs = 1, patience = 100, n_workers = 1, tl_delay = 1, save_every = None):
@@ -57,7 +72,9 @@ class TrainLoop(object):
 			train_accuracy = 0.0
 
 			print('Epoch {}/{}'.format(self.cur_epoch+1, n_epochs))
-			train_iter = tqdm(enumerate(self.generator.minibatch_generator_train()))
+			train_iter = tqdm(enumerate(self.dataloader_train))
+
+			print(train_iter)
 
 			print(self.cur_epoch)
 
@@ -93,7 +110,7 @@ class TrainLoop(object):
 			n_valid_iterations = 0
 			valid_accuracy = 0.0
 
-			for t, batch in enumerate(self.generator.minibatch_generator_valid()):
+			for t, batch in enumerate(self.dataloader_train):
 				
 				loss, acc = self.valid(batch)
 				
@@ -136,7 +153,9 @@ class TrainLoop(object):
 
 		self.model.train()
 			
-		x, y = batch
+		x = batch['data']
+		y = batch['label']
+		
 		print('\n')
 		#print(x.size())
 		#print(y.size())
@@ -151,7 +170,8 @@ class TrainLoop(object):
 		out_arousal = self.model.forward_multimodal_arousal(x)
 		#out_valence = self.model.forward_multimodal(x)
 
-		loss = F.cross_entropy(out_arousal, y[:, 1])
+
+		loss = F.cross_entropy(out_arousal, y[:, 0])
 
 
 		self.optimizer.zero_grad()
@@ -162,7 +182,7 @@ class TrainLoop(object):
 
 		#print(y[:, 0])
 
-		#print(torch.max(out_arousal, 1)[1])
+		print(torch.max(out_arousal, 1)[1])
 
 		accuracy = torch.mean((torch.max(out_arousal, 1)[1] == y[:, 0]).float())
 
@@ -176,13 +196,16 @@ class TrainLoop(object):
 
 		self.model.eval()
 		
-		x, y = batch
+		x = batch['data']
+		y = batch['label']
+
 		x = Variable(x, requires_grad = False)
 		y = Variable(y, requires_grad = False)
 
 		if self.cuda_mode:
 			x = x.cuda()
 			y = y.cuda()
+			
 
 		out_arousal = self.model.forward_multimodal_arousal(x)
 		loss = F.cross_entropy(out_arousal, y[:, 0])			#checar
