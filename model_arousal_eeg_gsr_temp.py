@@ -11,8 +11,8 @@ class model(nn.Module):
 		super(model, self).__init__()
 
 		# EEG network
-		self.conv1_1_eeg = nn.Conv1d(32, 64, kernel_size = 16)		# 128 - 16 + 1 = 113
-		self.conv1_2_eeg = nn.Conv1d(64, 64, kernel_size = 16)		# 113 - 16 + 1 = 98
+		self.conv1_1_eeg = nn.Conv1d(10, 32, kernel_size = 16)		# 128 - 16 + 1 = 113
+		self.conv1_2_eeg = nn.Conv1d(32, 64, kernel_size = 16)		# 113 - 16 + 1 = 98
 		self.conv2_1_eeg = nn.Conv1d(64, 128, kernel_size = 16)		# 98 - 16 + 1 = 83
 		self.conv2_2_eeg = nn.Conv1d(128, 128, kernel_size = 16)	# 83 - 16 + 1 = 68
 		self.conv3_1_eeg = nn.Conv1d(128, 256, kernel_size = 16)	# 68 - 16 + 1 = 53
@@ -38,7 +38,7 @@ class model(nn.Module):
 
 
 		# Output layer
-		self.fc_out_1 = nn.Linear(16*2, 8)
+		self.fc_out_1 = nn.Linear(16*1, 8)
 		self.fc_out_arousal = nn.Linear(8, 3)
 
 
@@ -82,7 +82,7 @@ class model(nn.Module):
 
 	def forward_multimodal_arousal(self, x):
 	
-		x_eeg = x[:, 0:32, :]
+		x_eeg = x[:, 0:10, :]
 		x_eog = x[:, 32:34, :]
 		#x_emg = x[:, 34:36, :]
 		
@@ -140,7 +140,7 @@ class model(nn.Module):
 		x_eeg = self.fc2_eeg(x_eeg)
 		
 		
-		
+		'''
 		#------SKIN TEMP AND GSR
 		x_temp_gsr = self.conv1_1_temp_gsr(x_temp_gsr)
 		x_temp_gsr = F.dropout(x_temp_gsr, training = self.training)
@@ -179,9 +179,12 @@ class model(nn.Module):
 		x_temp_gsr = F.dropout(x_temp_gsr, training = self.training)
 		x_temp_gsr = self.fc3_temp_gsr(x_temp_gsr)
 		
+		'''
 
-		concatenated_output = torch.cat([x_eeg, x_temp_gsr], 1)
+		#concatenated_output = torch.cat([x_eeg, x_temp_gsr], 1)
 		
+		concatenated_output = x_eeg
+
 		#print(concatenated_output.size())
 
 		output = self.fc_out_1(concatenated_output)
