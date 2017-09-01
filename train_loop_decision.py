@@ -42,7 +42,7 @@ class TrainLoop(object):
 			self.model = model
 			self.optimizer = optimizer
 			self.minibatch_size = minibatch_size
-			self.history = {'train_loss': [], 'train_loss_avg': [], 'train_accuracy_avg': [], 'valid_loss': [], 'valid_loss_avg': [], 'valid_accuracy_avg': []}
+			self.history = {'train_loss': [], 'valid_loss': []}
 			self.total_iters = 0
 			self.cur_epoch = 0
 			self.its_without_improv = 0
@@ -107,21 +107,16 @@ class TrainLoop(object):
 						torch.save(self, self.save_every_fmt.format(self.total_iters))
 
 				
-			
-			train_loss_avg = train_loss_sum / self.iter_epoch  
-			print('Training loss: {}'.format(train_loss_avg))
-			self.history['train_loss_avg'].append(train_loss_avg)
-
 			train_accuracy_avg = train_accuracy / self.iter_epoch  
 			print('Training accuracy: {}'.format(train_accuracy_avg))
-			self.history['train_accuracy_avg'].append(train_accuracy_avg)
+
 
 			# Validation
 			valid_loss_sum = 0.0
 			n_valid_iterations = 0
 			valid_accuracy = 0.0
 
-			for t, batch in enumerate(self.dataloader_train):
+			for t, batch in enumerate(self.dataloader_valid):
 				
 				loss, acc = self.valid(batch)
 				
@@ -134,13 +129,11 @@ class TrainLoop(object):
 
 				print(acc)
 
-			valid_loss_avg = valid_loss_sum / n_valid_iterations	
-			print('Validation loss: {}'.format(valid_loss_avg))
-			self.history['valid_loss_avg'].append(valid_loss_avg)
 
 			valid_accuracy_avg = valid_accuracy / n_valid_iterations 	
 			print('Validation accuracy: {}'.format(valid_accuracy_avg))
-			self.history['valid_accuracy_avg'].append(valid_accuracy_avg)
+
+			valid_loss_avg = valid_loss_sum / n_valid_iterations
 
 			self.checkpointing()
 
@@ -177,12 +170,12 @@ class TrainLoop(object):
 
 		out_eeg, out_temp_gsr = self.model.forward_multimodal_arousal(x)
 
-		targets = y[:, 1].contiguous()
+		targets = y[:, 0].contiguous()
 		targets = targets.view(targets.size(0), 1)
 
 
-		loss_eeg = F.cross_entropy(out_eeg, y[:, 1])
-		loss_temp_gsr = F.cross_entropy(out_temp_gsr, y[:, 1])
+		loss_eeg = F.cross_entropy(out_eeg, y[:, 0])
+		loss_temp_gsr = F.cross_entropy(out_temp_gsr, y[:, 0])
 
 		loss_fusion = loss_eeg + loss_temp_gsr
 
@@ -196,7 +189,7 @@ class TrainLoop(object):
 
 		out_fusion_max = (torch.max(out_fusion, 1)[1])
 
-		accuracy = torch.mean((out_fusion_max == y[:, 1]).float())
+		accuracy = torch.mean((out_fusion_max == y[:, 0]).float())
 		accuracy_return = accuracy.data
 
 
@@ -234,8 +227,8 @@ class TrainLoop(object):
 
 		out_eeg, out_temp_gsr = self.model.forward_multimodal_arousal(x)
 
-		loss_eeg = F.cross_entropy(out_eeg, y[:, 1])
-		loss_temp_gsr = F.cross_entropy(out_eeg, y[:, 1])
+		loss_eeg = F.cross_entropy(out_eeg, y[:, 0])
+		loss_temp_gsr = F.cross_entropy(out_eeg, y[:, 0])
 
 		loss_return = torch.sum(loss_eeg.data) + torch.sum(loss_temp_gsr.data)	# If sum receives: i) Tensor (loss.data), it returns a float; ii) Variable (loss), it returns a tensor
 
@@ -244,7 +237,7 @@ class TrainLoop(object):
 		out_fusion_max = (torch.max(out_fusion, 1)[1])
 
 
-		accuracy = torch.mean((out_fusion_max == y[:, 1]).float())
+		accuracy = torch.mean((out_fusion_max == y[:, 0]).float())
 		accuracy_return = accuracy.data
 
 		return loss_return, accuracy_return
