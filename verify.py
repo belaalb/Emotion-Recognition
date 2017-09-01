@@ -37,29 +37,27 @@ def plot_learningcurves(history, *keys):
 	plt.show()
 
 
-def calculate_metrics(labels, output):
-
-	out = {'acc': [], 'precision': [], 'recall': [], 'f1': [], 'auc': []}
+def calculate_metrics(labels, output, out_dict):
 
 	out_fusion_max = np.argmax(output, axis = 1)
 
 
 	acc = accuracy_score(labels, out_fusion_max)
-	out['acc'].append(acc)
+	out_dict['acc'].append(acc)
 
 	precision = precision_score(labels, out_fusion_max)
-	out['precision'].append(precision)
+	out_dict['precision'].append(precision)
 
 	recall = recall_score(labels, out_fusion_max)
-	out['recall'].append(recall)
+	out_dict['recall'].append(recall)
 
 	f1 = f1_score(labels, out_fusion_max)
-	out['f1'].append(f1)
+	out_dict['f1'].append(f1)
 
 	auc = roc_auc_score(labels, out_fusion_max)
-	out['auc'].append(auc)
+	out_dict['auc'].append(auc)
 
-	return out
+	return out_dict
 
 	
 
@@ -67,6 +65,8 @@ def calculate_metrics(labels, output):
 def test_model_classification_decision_level(model, ckpt, dataloader_valid, cuda_mode):
 
 	model.load_state_dict(ckpt['model_state'])
+
+	out = {'acc': [], 'precision': [], 'recall': [], 'f1': [], 'auc': []}
 
 	for t, batch in enumerate(dataloader_valid):
 
@@ -90,7 +90,7 @@ def test_model_classification_decision_level(model, ckpt, dataloader_valid, cuda
 		
 		labels = y[:, 1].cpu().data.numpy()
 
-		metrics = calculate_metrics(labels, out_fusion.cpu().data.numpy())
+		metrics = calculate_metrics(labels, out_fusion.cpu().data.numpy(), out)
 
 
 	return metrics
@@ -104,11 +104,11 @@ if __name__ == '__main__':
 	weight_valid = 1 / torch.DoubleTensor(reciprocal_weights_valid)
 	dataset_valid = DeapDataset(step = 'valid')
 	sampler_valid = torch.utils.data.sampler.WeightedRandomSampler(weight_valid, length_valid)
-	dataloader_valid = DataLoader(dataset_valid, 100)
+	dataloader_valid = DataLoader(dataset_valid, 400)
 	cuda_mode = True
 
 	model = model_arousal_eeg_gsr_temp_convtemporal.model()
-	ckpt = '/home/isabela/Desktop/emot_recog_class/less_signals_3s/decision_level/checkpoint_15ep.pt'
+	ckpt = '/home/isabela/Desktop/emot_recog_class/less_signals_3s/decision_level/valence_last_trial/checkpoint_15ep.pt'
 
 	ckpt = load_checkpoint(ckpt)
 	
@@ -119,7 +119,7 @@ if __name__ == '__main__':
 
 	for key in metrics.keys():
 		print(key)		
-		print(metrics[key])
+		print(sum(metrics[key])/len(metrics[key]))
 
 	
 
