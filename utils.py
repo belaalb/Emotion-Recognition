@@ -116,8 +116,8 @@ def merge_shuffle_norm_split_tvt_store_as_hdf(hdf_filename_to_read = '/home/isab
 	print(median_valence)
 
 
-	labels_arousal_val[(1 <= labels[:, 0]) & (labels[:, 0] <= median_arousal), 0] = 0
-	labels_arousal_val[(median_arousal < labels[:, 0]) & (labels[:, 0] <= 9), 0] = 1 
+	labels_arousal_val[(1 <= labels[:, 0]) & (labels[:, 0] <= 5), 0] = 0
+	labels_arousal_val[(5 < labels[:, 0]) & (labels[:, 0] <= 9), 0] = 1 
 	#labels_arousal_val[(6.5 < labels[:, 0]) & (labels[:, 0] <= 9), 0] = 2
 	
 
@@ -205,8 +205,8 @@ def calculate_weights(root = "/home/isabela/Desktop/emot_recog_class/less_signal
 
 	_, labels_arousal_val = read_hdf_processed_labels(dataset_filename)
 
-	p0 = sum(labels_arousal_val[:, 0] == 0) / labels_arousal_val.shape[0] 	
-	p1 = sum(labels_arousal_val[:, 0] == 1) / labels_arousal_val.shape[0]
+	p0 = sum(labels_arousal_val[:, 1] == 0) / labels_arousal_val.shape[0] 	
+	p1 = sum(labels_arousal_val[:, 1] == 1) / labels_arousal_val.shape[0]
 	#p2 = sum(labels_arousal_val[:, 0] == 2) / labels_arousal_val.shape[0]
 
 	#probs = [p0, p1, p2]
@@ -216,7 +216,7 @@ def calculate_weights(root = "/home/isabela/Desktop/emot_recog_class/less_signal
 	reciprocal_weights = [0] * len(labels_arousal_val) 
 
 	for idx in range(len(labels_arousal_val)):
-		reciprocal_weights[idx] = probs[int(labels_arousal_val[idx, 0])]
+		reciprocal_weights[idx] = probs[int(labels_arousal_val[idx, 1])]
 
 	length = len(labels_arousal_val)
 
