@@ -13,5 +13,13 @@ The second approach intends to solve two 3-class classification problems to pred
     4-6: neutral
     7-9: active
     
+# TO DO:
+Data preparation:
+  1. Overlapping windows
+  2. Data augmentation for class 0
+Model:
+  1. LSTMs
+  2. Include other modalities
+  3. Hyperparameters search
     
   
