@@ -4,6 +4,8 @@ import pickle
 import os, sys
 import h5py
 
+from numpy.lib.stride_tricks import as_strided
+
 
 def load_dataset_per_subject(sub = 1, main_dir = '/home/isabela/Desktop/emot_recog_class/data_preprocessed_python/'):
 
@@ -18,6 +20,13 @@ def load_dataset_per_subject(sub = 1, main_dir = '/home/isabela/Desktop/emot_rec
 	data = subject['data'][:, :, 3*128-1:-1] # Excluding the first 3s of baseline
 		
 	return data, labels
+
+def strided_app(a, window_length, S):
+
+	nrows = ( (len(a) - window_length) // S ) + 1
+	n = a.strides[0]
+	
+	return as_strided(a, shape = (nrows, window_length), strides = (S*n, n))
 
 
 def split_data_per_subject(sub = 1, segment_duration = 3, sampling_rate = 128, main_dir = '/home/isabela/Desktop/emot_recog_class/data_preprocessed_python/'):
@@ -56,6 +65,57 @@ def split_data_per_subject(sub = 1, segment_duration = 3, sampling_rate = 128, m
 	return final_data_out, final_labels_out
 
 
+
+def split_data_per_subject_overlapping(sub = 1, window_duration = 3, sampling_rate = 128, strides = 1, main_dir = '/home/isabela/Desktop/emot_recog_class/data_preprocessed_python/'):
+
+	'''
+	TO DO:
+	- Increase window length
+	- Overlapping windows
+ 
+	'''
+
+	data, labels = load_dataset_per_subject(sub, main_dir)
+	window_samples = window_duration * sampling_rate
+	strides_samples = strides * sampling_rate
+	number_of_trials = data.shape[0]
+	number_of_channels = data.shape[1]
+ 
+	number_of_segments = data.shape[2]/number_of_samples
+	number_of_final_examples = number_of_trials*number_of_segments
+
+	final_data = []
+	final_labels = []
+
+	for trial in range(0, number_of_trials):
+
+		examples_all_channels = []
+	
+		for channel in range(0, number_of_channels)
+
+			data_to_split = data[trial, channel, :]
+			data_chunks = strided_app(data_to_split, window_samples, strides_samples)
+			examples_per_channel = np.reshape(data_chunks, (data_chunks.shape[0], 1, window_samples))
+			examples_all_channels.append(examples_per_channel)
+
+		
+		data_examples_in_row = np.reshape(np.asarray(examples_all_channels), (data_chunks.shape[0], data.shape[1], window_samples))
+		final_data.append(data_examples_in_row)
+
+
+		label_to_repeat = labels[trial, :]
+		label_repeated = np.tile(label_to_repeat, (data_chunks.shape[0], 1))
+		final_labels.append(label_repeated)
+
+	number_of_final_examples = number_of_trials * data_chunks.shape[0]
+
+	final_data_out = np.reshape(np.asarray(final_data), (number_of_final_examples, data.shape[1], window_samples))
+	final_labels_out = np.reshape(np.asarray(final_labels), (number_of_final_examples, labels.shape[1]))
+
+
+	return final_data_out, final_labels_out
+
+
 def create_hdf(subjects_number = 32, hdf_filename = 'DEAP_dataset_subjects_list.hdf'):
 
 	complete_data = []
@@ -77,7 +137,6 @@ def create_hdf(subjects_number = 32, hdf_filename = 'DEAP_dataset_subjects_list.
 	complete_dataset = complete_dataset_file.create_dataset('data', data = complete_data)
 	complete_dataset = complete_dataset_file.create_dataset('labels', data = complete_labels)
 	complete_dataset_file.close()
-
 
 
 
