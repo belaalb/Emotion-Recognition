@@ -23,10 +23,45 @@ def load_dataset_per_subject(sub = 1, main_dir = '/home/isabela/Desktop/emot_rec
 
 def strided_app(a, window_length, S):
 
-	nrows = ( (len(a) - window_length) // S ) + 1
+	nrows = ((len(a) - window_length) // S ) + 1
 	n = a.strides[0]
 	
 	return as_strided(a, shape = (nrows, window_length), strides = (S*n, n))
+
+
+def add_gaussian_noise(data, labels, n):
+	
+	'''
+	Data augmentation:
+	Select n examples from data to add gaussian noise  
+	Returns data merged with the new examples and labels merged with the respective new labels
+	'''
+
+	idx = np.where(labels == 0)
+
+	idx = np.random.permutation(idx)
+	
+	data_augmented = data[idx, :]
+	labels_augmented = labels[idx, :]
+
+	gaussian_noise = np.random.gaussian(0, 0.01, data_augumented.shape)
+	data_augmented = data_augmented + gaussian_noise
+
+	new_data = np.concatenate(data, data_augmented)
+	new_labels = np.concatenate(labels, labels_augmented)
+
+	return new_data, new_labels
+	
+
+def labels_quantization(labels):
+
+	labels_val = np.zeros([labels.shape[0], 1]);
+
+	labels_val[(1 <= labels[:, 0]) & (labels[:, 0] <= 5), 1] = 0
+	labels_val[(5 < labels[:, 0]) & (labels[:, 0] <= 9), 1] = 1 
+
+	return labels_val
+
 
 
 def split_data_per_subject(sub = 1, segment_duration = 3, sampling_rate = 128, main_dir = '/home/isabela/Desktop/emot_recog_class/data_preprocessed_python/'):
@@ -61,19 +96,11 @@ def split_data_per_subject(sub = 1, segment_duration = 3, sampling_rate = 128, m
 	final_data_out = np.reshape(np.asarray(final_data), (number_of_final_examples, data.shape[1], number_of_samples))
 	final_labels_out = np.reshape(np.asarray(final_labels), (number_of_final_examples, labels.shape[1]))
 
-
 	return final_data_out, final_labels_out
-
 
 
 def split_data_per_subject_overlapping(sub = 1, window_duration = 3, sampling_rate = 128, strides = 1, main_dir = '/home/isabela/Desktop/emot_recog_class/data_preprocessed_python/'):
 
-	'''
-	TO DO:
-	- Increase window length
-	- Overlapping windows
- 
-	'''
 
 	data, labels = load_dataset_per_subject(sub, main_dir)
 	window_samples = window_duration * sampling_rate
@@ -97,11 +124,9 @@ def split_data_per_subject_overlapping(sub = 1, window_duration = 3, sampling_ra
 			data_chunks = strided_app(data_to_split, window_samples, strides_samples)
 			examples_per_channel = np.reshape(data_chunks, (data_chunks.shape[0], 1, window_samples))
 			examples_all_channels.append(examples_per_channel)
-
 		
 		data_examples_in_row = np.reshape(np.asarray(examples_all_channels), (data_chunks.shape[0], data.shape[1], window_samples))
 		final_data.append(data_examples_in_row)
-
 
 		label_to_repeat = labels[trial, :]
 		label_repeated = np.tile(label_to_repeat, (data_chunks.shape[0], 1))
@@ -111,7 +136,6 @@ def split_data_per_subject_overlapping(sub = 1, window_duration = 3, sampling_ra
 
 	final_data_out = np.reshape(np.asarray(final_data), (number_of_final_examples, data.shape[1], window_samples))
 	final_labels_out = np.reshape(np.asarray(final_labels), (number_of_final_examples, labels.shape[1]))
-
 
 	return final_data_out, final_labels_out
 
@@ -139,7 +163,6 @@ def create_hdf(subjects_number = 32, hdf_filename = 'DEAP_dataset_subjects_list.
 	complete_dataset_file.close()
 
 
-
 def merge_shuffle_norm_split_tvt_store_as_hdf(hdf_filename_to_read = '/home/isabela/Desktop/emot_recog_class/less_signals_3s/DEAP_dataset_subjects_list.hdf', hdf_filename_to_save_train = '/home/isabela/Desktop/emot_recog_class/less_signals_3s/DEAP_dataset_train.hdf', hdf_filename_to_save_valid = '/home/isabela/Desktop/emot_recog_class/less_signals_3s/DEAP_dataset_valid.hdf', hdf_filename_to_save_test = 'DEAP_dataset_test.hdf'):
 
 	#tvt: train, valid, test
@@ -161,54 +184,38 @@ def merge_shuffle_norm_split_tvt_store_as_hdf(hdf_filename_to_read = '/home/isab
 	labels = labels[idxs, :]
 
 
-	labels_arousal_val = np.zeros([number_of_examples, 2]);
-	#labels_val = np.zeros([number_of_examples, 3]);
+	labels_val = labels_quatization(labels)
 
-	
-	print(np.max(labels[:, 1]))
-	print(np.min(labels[:, 1]))
+	label0 = sum(labels_val[:, 1] == 0)
+	label1 = sum(labels_val[:, 1] == 1)
 
-	median_arousal = np.median(labels[:, 0])
-	median_valence = np.median(labels[:, 1])
+	to_augment = label1 - label0
 
-	#print(median_arousal)
-	print(median_valence)
+	if (to_augment > label0):
+		to_augment = label0
 
-
-	labels_arousal_val[(1 <= labels[:, 0]) & (labels[:, 0] <= 5), 0] = 0
-	labels_arousal_val[(5 < labels[:, 0]) & (labels[:, 0] <= 9), 0] = 1 
-	#labels_arousal_val[(6.5 < labels[:, 0]) & (labels[:, 0] <= 9), 0] = 2
-	
-
-	labels_arousal_val[(1 <= labels[:, 1]) & (labels[:, 1] <= 5), 1] = 0
-	labels_arousal_val[(5 < labels[:, 1]) & (labels[:, 1] <= 9), 1] = 1 
-	#labels_arousal_val[(6.5 < labels[:, 1]) & (labels[:, 1] <= 9), 1] = 2
+	data, labels_val = add_gaussian_noise(data, labels_val, to_augment)
 
 
 	data_train = data[0:int(0.9*number_of_examples), :, :]
 	data_valid = data[int(0.9*number_of_examples):-1, :, :]
-	#data_test = data[int(0.9*number_of_examples):-1, :, :]
+
 	
-	labels_arousal_val_train = labels_arousal_val[0:int(0.9*number_of_examples), :]
-	labels_arousal_val_valid = labels_arousal_val[int(0.9*number_of_examples):-1, :]
-	#labels_arousal_val_test = labels_arousal_val[int(0.9*number_of_examples):-1, :]
+	labels_val_train = labels_val[0:int(0.9*number_of_examples), :]
+	labels_val_valid = labels_val[int(0.9*number_of_examples):-1, :]
+
 	
 	dataset_file_train = h5py.File(hdf_filename_to_save_train, 'w')
 	dataset_train = dataset_file_train.create_dataset('data', data = data_train)
-	dataset_train = dataset_file_train.create_dataset('labels_arousal_val', data = labels_arousal_val_train)
+	dataset_train = dataset_file_train.create_dataset('labels_val', data = labels_val_train)
 	dataset_file_train.close()
 
 	dataset_file_valid = h5py.File(hdf_filename_to_save_valid, 'w')
 	dataset_valid = dataset_file_valid.create_dataset('data', data = data_valid)
-	dataset_valid = dataset_file_valid.create_dataset('labels_arousal_val', data = labels_arousal_val_valid)
+	dataset_valid = dataset_file_valid.create_dataset('labels_val', data = labels_val_valid)
 	dataset_file_valid.close()
 
-	'''
-	dataset_file_test = h5py.File(hdf_filename_to_save_test, 'w')
-	dataset_test = dataset_file_test.create_dataset('data', data = data_test)
-	dataset_test = dataset_file_test.create_dataset('labels_arousal_val', data = labels_arousal_val_test)
-	dataset_file_test.close()
-	'''
+
 
 def read_hdf(hdf_filename = 'DEAP_dataset_subjects_list.hdf'):
 
@@ -225,11 +232,12 @@ def read_hdf_processed_labels(hdf_filename = 'DEAP_dataset_train.hdf'):
 	open_file = h5py.File(hdf_filename, 'r')
 	
 	data = open_file['data']
-	labels_arousal_val = open_file['labels_arousal_val']
+	labels_arousal_val = open_file['labels_val']
 
 	#open_file.close()
 
 	return data, labels_arousal_val
+
 
 def read_hdf_processed_labels_return_size(hdf_filename = 'DEAP_dataset_train.hdf'):
 
@@ -242,16 +250,18 @@ def read_hdf_processed_labels_return_size(hdf_filename = 'DEAP_dataset_train.hdf
 
 	return length
 
+
 def read_hdf_processed_labels_idx(idx, hdf_filename = 'DEAP_dataset_train.hdf'):
 
 	open_file = h5py.File(hdf_filename, 'r')
 	
 	data = open_file['data'][idx]
-	labels_arousal_val = open_file['labels_arousal_val'][idx]
+	labels_arousal_val = open_file['labels_val'][idx]
 
 	open_file.close()
 
-	return data, labels_arousal_val
+	return data, labels_val
+
 
 def calculate_weights(root = "/home/isabela/Desktop/emot_recog_class/less_signals_3s/DEAP_dataset", step = "train"):
 
@@ -264,23 +274,19 @@ def calculate_weights(root = "/home/isabela/Desktop/emot_recog_class/less_signal
 
 	_, labels_arousal_val = read_hdf_processed_labels(dataset_filename)
 
-	p0 = sum(labels_arousal_val[:, 1] == 0) / labels_arousal_val.shape[0] 	
-	p1 = sum(labels_arousal_val[:, 1] == 1) / labels_arousal_val.shape[0]
-	#p2 = sum(labels_arousal_val[:, 0] == 2) / labels_arousal_val.shape[0]
-
-	#probs = [p0, p1, p2]
+	p0 = sum(labels_val[:, 1] == 0) / labels_val.shape[0] 	
+	p1 = sum(labels_val[:, 1] == 1) / labels_val.shape[0]
 
 	probs = [p0, p1]
 
 	reciprocal_weights = [0] * len(labels_arousal_val) 
 
 	for idx in range(len(labels_arousal_val)):
-		reciprocal_weights[idx] = probs[int(labels_arousal_val[idx, 1])]
+		reciprocal_weights[idx] = probs[int(labels_val[idx, 1])]
 
-	length = len(labels_arousal_val)
+	length = len(labels_val)
 
 	return reciprocal_weights, length
-
 
 
 if __name__ == '__main__':
@@ -289,13 +295,11 @@ if __name__ == '__main__':
 
 	#merge_shuffle_norm_split_tvt_store_as_hdf()
 	
-	data, labels_arousal_val = read_hdf_processed_labels('/home/isabela/Desktop/emot_recog_class/less_signals_3s/DEAP_dataset_train.hdf')
+	data, labels_val = read_hdf_processed_labels('/home/isabela/Desktop/emot_recog_class/less_signals_3s/DEAP_dataset_train.hdf')
 	print(data.shape)
-	print(labels_arousal_val.shape)
+	print(labels_val.shape)
 
 
-
-	print('Label 0', sum(labels_arousal_val[:, 1] == 0))	
-	print('Label 1', sum(labels_arousal_val[:, 1] == 1))
-	#print('Label 2', sum(labels_arousal_val[:, 0] == 2))
-	print(labels_arousal_val[234:255, 1])
+	print('Label 0', sum(labels_val[:, 1] == 0))	
+	print('Label 1', sum(labels_val[:, 1] == 1))
+	print(labels_val[234:255, 1])
