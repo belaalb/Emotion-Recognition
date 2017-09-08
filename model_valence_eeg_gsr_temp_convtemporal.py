@@ -13,73 +13,43 @@ class model(nn.Module):
 
 				
 		# EEG network
-		self.conv1_1_eeg = nn.Conv1d(32, 48, kernel_size = 128)		# 384 - 128 + 1 = 257
-		self.conv1_2_eeg = nn.Conv1d(48, 64, kernel_size = 128)		# 257 - 128 + 1 = 130
-		self.conv2_1_eeg = nn.Conv1d(64, 64, kernel_size = 64)		# 130 - 64 + 1 = 67
-		self.conv2_2_eeg = nn.Conv1d(64, 32, kernel_size = 16)		# 67 - 16 + 1 = 52
-		self.conv3_1_eeg = nn.Conv1d(32, 16, kernel_size = 16)		# 52 - 16 + 1 = 37
-		self.conv3_2_eeg = nn.Conv1d(16, 8, kernel_size = 16)		# 37 - 16 + 1 = 22
-		self.conv4_1_eeg = nn.Conv1d(8, 4, kernel_size = 8)		# 22 - 8 + 1 = 15
-		self.conv4_2_eeg = nn.Conv1d(4, 4, kernel_size = 8)		# 15 - 8 + 1 = 8
-		self.fc1_eeg = nn.Linear(4*8, 16)
-		self.fc2_eeg = nn.Linear(16, 8)				# Representation to be concatenated
+		self.conv1_1_eeg = nn.Conv2d(1, 8, (5, 128))			# 384 - 128 + 1 = 257; 32 - 5 + 1 = 28
+		self.conv1_2_eeg = nn.Conv2d(8, 8, (5, 128))			# 257 - 128 + 1 = 130; 28 - 5 + 1 = 24
+		self.conv2_1_eeg = nn.Conv2d(8, 16, (5, 64))			# 130 - 64 + 1 = 67; 24 - 5 + 1 = 20
+		self.conv2_2_eeg = nn.Conv2d(16, 16, (5, 32))			# 67 - 32 + 1 = 36; 20 - 5 + 1 = 16
+		self.conv3_1_eeg = nn.Conv2d(16, 32, (5, 16))			# 36 - 16 + 1 = 21; 16 - 5 + 1 = 12 
+		self.conv3_2_eeg = nn.Conv2d(32, 16, (5, 8))			# 21 - 8 + 1 = 14; 12 - 5 + 1 = 8
+		self.conv4_1_eeg = nn.Conv2d(16, 8, (5, 8))			# 14 - 8 + 1 = 7; 8 - 5 + 1 = 4 
+		self.fc1_eeg = nn.Linear(8*7*4, 60)
+		self.fc2_eeg = nn.Linear(60, 40)					# Representation to be concatenated
+
+		# Output layer
+		self.fc_out_1_eeg = nn.Linear(40, 20)
+		self.fc_out_2_eeg = nn.Linear(20, 10)
+		self.fc_out_eeg = nn.Linear(10, 2)
 		
 
 		# Temp and GSR network
 		self.conv1_1_temp_gsr = nn.Conv1d(2, 16, kernel_size = 192)	# 384 - 192 + 1 = 193
 		self.conv2_1_temp_gsr = nn.Conv1d(16, 32, kernel_size = 128)	# 193 - 128 + 1 = 66
 		self.conv3_1_temp_gsr = nn.Conv1d(32, 16, kernel_size = 64)	# 66 - 64 + 1 = 3
-		self.fc1_temp_gsr = nn.Linear(16*3, 16)
-		self.fc2_temp_gsr = nn.Linear(16, 8)				# Representation to be concatenated
+		self.fc1_temp_gsr = nn.Linear(16*3, 32)
+		self.fc2_temp_gsr = nn.Linear(32, 20)				# Representation to be concatenated
 				
 
 		# Output layer
-		self.fc_out_1 = nn.Linear(16, 4)
-		self.fc_out_arousal = nn.Linear(4, 1)
+		self.fc_out_1_temp_gsr = nn.Linear(20, 10)
+		self.fc_out_2_temp_gsr = nn.Linear(10, 5)
+		self.fc_out_temp_gsr = nn.Linear(5, 2)
 
 
-	
-	def forward(self, x):
-		
-		x = self.conv1_1(x)
-		x = F.dropout(x, training = self.training)
-		x = F.relu(x)
-		x = self.conv1_2(x)
-		x = F.dropout(x, training = self.training)
-		x = F.relu(x)
-
-		x = self.conv2_1(x)
-		x = F.dropout(x, training = self.training)
-		x = F.relu(x)
-		x = self.conv2_2(x)
-		x = F.dropout(x, training = self.training)
-		x = F.relu(x)
-
-		x = self.conv3_1(x)
-		x = F.dropout(x, training = self.training)
-		x = F.relu(x)
-		x = self.conv3_2(x)
-		x = F.dropout(x, training = self.training)
-		x = F.relu(x)
-
-		x = self.conv4_1(x)
-		x = F.dropout(x, training = self.training)
-		x = F.relu(x)
-		x = self.conv4_2(x)
-		x = F.dropout(x, training = self.training)
-		x = F.relu(x)
-
-		x = x.view(x.size(0), -1)
-		x = F.relu(self.fc1(x))
-		x = F.dropout(x, training = self.training)
-		x = F.sigmoid(self.fc2(x))
-		
-		return x
-
-	def forward_multimodal_arousal(self, x):
+	def forward_multimodal(self, x):
 	
 		x_eeg = x[:, 0:32, :]
-		x_eog = x[:, 32:34, :]
+		x_eeg = x_eeg.contiguous()
+		x_eeg = x_eeg.view(x_eeg.size()[0], 1, x_eeg.size()[1], x_eeg.size()[2])
+		
+		#x_eog = x[:, 32:34, :]
 		#x_emg = x[:, 34:36, :]
 		
 		#x_resp_ppg = x[:, 37:39, :]
@@ -126,18 +96,20 @@ class model(nn.Module):
 		x_eeg = self.conv4_1_eeg(x_eeg)
 		x_eeg = F.alpha_dropout(x_eeg, training = self.training)
 		x_eeg = F.selu(x_eeg)
-		x_eeg = self.conv4_2_eeg(x_eeg)
-		x_eeg = F.alpha_dropout(x_eeg, training = self.training)
-		x_eeg = F.selu(x_eeg)
 
 
-		
 		x_eeg = x_eeg.view(x_eeg.size(0), -1)
-		#print(x_eeg.size())
 		x_eeg = F.selu(self.fc1_eeg(x_eeg))
 		x_eeg = F.alpha_dropout(x_eeg, training = self.training)
 		x_eeg = self.fc2_eeg(x_eeg)
-		
+
+		output_eeg = self.fc_out_1_eeg(x_eeg)
+		output_eeg = F.alpha_dropout(output_eeg, training = self.training)
+		output_eeg = F.selu(output_eeg)
+		output_eeg = self.fc_out_2_eeg(output_eeg)
+		output_eeg = F.alpha_dropout(output_eeg, training = self.training)
+		output_eeg = F.selu(output_eeg)
+		output_eeg = F.softmax(self.fc_out_eeg(output_eeg))
 		
 		
 		#------SKIN TEMP AND GSR
@@ -159,16 +131,17 @@ class model(nn.Module):
 		x_temp_gsr = F.selu(self.fc2_temp_gsr(x_temp_gsr))
 		
 
-		concatenated_output = torch.cat([x_eeg, x_temp_gsr], 1)
+		output_temp_gsr = self.fc_out_1_temp_gsr(x_temp_gsr)
+		output_temp_gsr = F.alpha_dropout(output_temp_gsr, training = self.training)
+		output_temp_gsr = F.selu(output_temp_gsr)
+		output_temp_gsr = self.fc_out_2_temp_gsr(output_temp_gsr)
+		output_temp_gsr = F.alpha_dropout(output_temp_gsr, training = self.training)
+		output_temp_gsr = F.selu(output_temp_gsr)
+		output_temp_gsr = F.softmax(self.fc_out_temp_gsr(output_temp_gsr))
 
-		output = self.fc_out_1(concatenated_output)
-		output = F.selu(output)
-		output = F.alpha_dropout(output, training = self.training)
-		output = F.sigmoid(self.fc_out_arousal(output))
 
 
-
-		return output
+		return output_eeg, output_temp_gsr
 	
 		
 

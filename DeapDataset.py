@@ -8,7 +8,7 @@ import utils
 
 class DeapDataset(Dataset):
 
-	def __init__(self, root = "/home/isabela/Desktop/emot_recog_class/DEAP_dataset", step = "train"):
+	def __init__(self, root = "/home/isabela/Desktop/emot_recog_class/less_signals_3s/DEAP_dataset", step = "train"):
 
 		if (step == "train"):
 			self.dataset_filename = root + "_train.hdf"

@@ -176,11 +176,17 @@ def merge_shuffle_norm_split_tvt_store_as_hdf(hdf_filename_to_read = '/home/isab
 	# Rescaling to [0; 1]
 
 	max_per_channel = np.amax(np.amax(data, axis = 2), axis = 0)
-	print(max_per_channel)
-	min_per_channel = np.amin(np.amin(data, axis = 2), axis = 0)
-	print(min_per_channel)
+	print(max_per_channel.shape)
 
-	data = (data - min_per_channel) / (max_per_channel - min_per_channel)
+	min_per_channel = np.amin(np.amin(data, axis = 2), axis = 0)
+	print(min_per_channel.shape)
+
+	for example in data:
+		for channel in range(0, data.shape[1]):
+			example[channel, :] = (example[channel, :] - min_per_channel[channel]) / (max_per_channel[channel] - min_per_channel[channel]) 
+
+	print(np.amax(np.amax(data, axis = 2), axis = 0))
+	print(np.amin(np.amin(data, axis = 2), axis = 0))
 
 	labels_val = labels_quantization(labels)
 
@@ -238,7 +244,7 @@ def read_hdf_processed_labels_return_size(hdf_filename = 'DEAP_dataset_train.hdf
 	return length
 
 
-def read_hdf_processed_labels_idx(idx, noisy = True, hdf_filename = 'DEAP_dataset_train.hdf'):
+def read_hdf_processed_labels_idx(idx, noisy = True, hdf_filename = '/home/isabela/Desktop/emot_recog_class/less_signals_3s_overlap/DEAP_dataset_train.hdf'):
 
 	open_file = h5py.File(hdf_filename, 'r')
 	
@@ -247,7 +253,7 @@ def read_hdf_processed_labels_idx(idx, noisy = True, hdf_filename = 'DEAP_datase
 
 	if noisy:
 		if labels_val == 0:
-			data = data + np.random.gaussian(0, 0.01, data.shape)
+			data = data + np.random.normal(0, 0.01, data.shape)
 
 	open_file.close()
 
@@ -265,15 +271,15 @@ def calculate_weights(root = "/home/isabela/Desktop/emot_recog_class/less_signal
 
 	_, labels_val = read_hdf_processed_labels(dataset_filename)
 
-	p0 = sum(labels_val[:, 1] == 0) / labels_val.shape[0] 	
-	p1 = sum(labels_val[:, 1] == 1) / labels_val.shape[0]
+	p0 = sum(labels_val[:, 0] == 0) / labels_val.shape[0] 	
+	p1 = sum(labels_val[:, 0] == 1) / labels_val.shape[0]
 
 	probs = [p0, p1]
 
 	reciprocal_weights = [0] * len(labels_val) 
 
 	for idx in range(len(labels_val)):
-		reciprocal_weights[idx] = probs[int(labels_val[idx, 1])]
+		reciprocal_weights[idx] = probs[int(labels_val[idx, 0])]
 
 	length = len(labels_val)
 
@@ -293,4 +299,3 @@ if __name__ == '__main__':
 
 	print('Label 0', sum(labels_val[:, 0] == 0))	
 	print('Label 1', sum(labels_val[:, 0] == 1))
-	print(labels_val[234:255, 1])

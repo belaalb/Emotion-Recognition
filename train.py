@@ -2,9 +2,8 @@ from __future__ import print_function
 import argparse
 import torch
 import torch.optim
-import model_arousal_eeg_gsr_temp
+import model_valence_eeg_gsr_temp_convtemporal
 import utils
-from minibatch_generator import minibatch_generator
 from train_loop import TrainLoop
 
 # Training settings
@@ -13,8 +12,8 @@ parser.add_argument('--minibatch-size', type = int, default = 64, metavar = 'N',
 parser.add_argument('--valid-batch-size', type = int, default = 1000, metavar = 'N', help = 'input batch size for testing (default: 1000)')
 parser.add_argument('--epochs', type = int, default = 500, metavar = 'N', help = 'number of epochs to train (default: 200)')
 parser.add_argument('--patience', type = int, default = 30, metavar = 'N', help = 'number of epochs without improvement to wait before stopping training (default: 30)')
-parser.add_argument('--lr', type = float, default = 0.001, metavar = 'LR', help = 'learning rate (default: 0.00001)')
-parser.add_argument('--l2', type = float, default = 0.001, metavar = 'lambda', help = 'L2 weight decay coefficient (default: 0.001)')
+parser.add_argument('--lr', type = float, default = 0.001, metavar = 'LR', help = 'learning rate (default: 0.001)')
+parser.add_argument('--l2', type = float, default = 0.0001, metavar = 'lambda', help = 'L2 weight decay coefficient (default: 0.0001)')
 parser.add_argument('--no-cuda', action = 'store_true', default = False, help = 'disables CUDA training')
 parser.add_argument('--checkpoint-epoch', type = int, default = None, metavar = 'N', help = 'epoch to load for checkpointing. If None, training starts from scratch')
 parser.add_argument('--checkpoint-path', type = str, default = None, metavar = 'Path', help = 'Path for checkpointing')
@@ -30,7 +29,7 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-model = model_arousal_eeg_gsr_temp.model()
+model = model_valence_eeg_gsr_temp_convtemporal.model()
 
 if args.cuda:
 	#model = torch.nn.DataParallel(model).cuda()

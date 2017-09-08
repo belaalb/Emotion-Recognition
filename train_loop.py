@@ -14,6 +14,8 @@ from tqdm import tqdm
 
 import gc
 
+from sklearn.metrics import precision_score, f1_score, recall_score
+
 
 class TrainLoop(object):
 
@@ -40,7 +42,7 @@ class TrainLoop(object):
 			self.model = model
 			self.optimizer = optimizer
 			self.minibatch_size = minibatch_size
-			self.history = {'train_loss': [], 'train_loss_avg': [], 'train_accuracy_avg': [], 'valid_loss': [], 'valid_loss_avg': [], 'valid_accuracy_avg': []}
+			self.history = {'train_loss': [], 'valid_loss': []}
 			self.total_iters = 0
 			self.cur_epoch = 0
 			self.its_without_improv = 0
@@ -55,8 +57,14 @@ class TrainLoop(object):
 		self.sampler_train = torch.utils.data.sampler.WeightedRandomSampler(self.weight_train, length_train)
 		self.dataloader_train = DataLoader(self.dataset_train, self.minibatch_size, shuffle = False, sampler = self.sampler_train)
 
+
+		reciprocal_weights_valid, length_valid = utils.calculate_weights(step = 'valid')
+
+		self.weight_valid = 1 / torch.DoubleTensor(reciprocal_weights_valid)
 		self.dataset_valid = DeapDataset(step = 'valid')
-		self.dataloader_valid = DataLoader(self.dataset_valid, self.minibatch_size, shuffle = False)
+		self.sampler_valid = torch.utils.data.sampler.WeightedRandomSampler(self.weight_valid, length_valid)
+		self.dataloader_valid = DataLoader(self.dataset_valid, self.minibatch_size)
+
 
 
 
@@ -70,6 +78,8 @@ class TrainLoop(object):
 		while (self.cur_epoch < n_epochs) and (self.its_without_improv < patience):
 			train_loss_sum = 0.0
 			train_accuracy = 0.0
+			self.iter_epoch = 0.0
+			
 
 			print('Epoch {}/{}'.format(self.cur_epoch+1, n_epochs))
 			train_iter = tqdm(enumerate(self.dataloader_train))
@@ -86,6 +96,7 @@ class TrainLoop(object):
 				
 				train_loss_sum += loss
 				self.total_iters += 1
+				self.iter_epoch += 1
 				
 				train_accuracy += acc
 
@@ -96,21 +107,16 @@ class TrainLoop(object):
 						torch.save(self, self.save_every_fmt.format(self.total_iters))
 
 				
-			
-			train_loss_avg = train_loss_sum / self.total_iters  
-			print('Training loss: {}'.format(train_loss_avg))
-			self.history['train_loss_avg'].append(train_loss_avg)
-
-			train_accuracy_avg = train_accuracy / self.total_iters  
+			train_accuracy_avg = train_accuracy / self.iter_epoch  
 			print('Training accuracy: {}'.format(train_accuracy_avg))
-			self.history['train_accuracy_avg'].append(train_accuracy_avg)
+
 
 			# Validation
 			valid_loss_sum = 0.0
 			n_valid_iterations = 0
 			valid_accuracy = 0.0
 
-			for t, batch in enumerate(self.dataloader_train):
+			for t, batch in enumerate(self.dataloader_valid):
 				
 				loss, acc = self.valid(batch)
 				
@@ -123,16 +129,13 @@ class TrainLoop(object):
 
 				print(acc)
 
-			valid_loss_avg = valid_loss_sum / n_valid_iterations	
-			print('Validation loss: {}'.format(valid_loss_avg))
-			self.history['valid_loss_avg'].append(valid_loss_avg)
 
 			valid_accuracy_avg = valid_accuracy / n_valid_iterations 	
 			print('Validation accuracy: {}'.format(valid_accuracy_avg))
-			self.history['valid_accuracy_avg'].append(valid_accuracy_avg)
 
-			if (self.cur_epoch % 20 == 0):
-				self.checkpointing()
+			valid_loss_avg = valid_loss_sum / n_valid_iterations
+
+			self.checkpointing()
 
 			self.cur_epoch += 1
 
@@ -157,8 +160,6 @@ class TrainLoop(object):
 		y = batch['label']
 		
 		print('\n')
-		#print(x.size())
-		#print(y.size())
 
 		x = Variable(x)
 		y = Variable(y, requires_grad = False)
@@ -167,27 +168,44 @@ class TrainLoop(object):
 			x = x.cuda()
 			y = y.cuda()
 
-		out_arousal = self.model.forward_multimodal_arousal(x)
-		#out_valence = self.model.forward_multimodal(x)
+		out_eeg, out_temp_gsr = self.model.forward_multimodal(x)
+
+		targets = y[:, 0].contiguous()
+		targets = targets.view(targets.size(0), 1)
 
 
-		loss = F.cross_entropy(out_arousal, y[:, 0])
+		loss_eeg = F.cross_entropy(out_eeg, y[:, 0])
+		loss_temp_gsr = F.cross_entropy(out_temp_gsr, y[:, 0])
 
+		loss_fusion = loss_eeg + loss_temp_gsr
 
 		self.optimizer.zero_grad()
-		loss.backward()
+		loss_fusion.backward()
 		self.optimizer.step()
 
-		loss_return = torch.sum(loss.data)
+		loss_return = torch.sum(loss_eeg.data) + torch.sum(loss_temp_gsr.data)
+		
+		out_fusion = (out_eeg + out_temp_gsr) / 2
 
-		#print(y[:, 0])
+		out_fusion_max = (torch.max(out_fusion, 1)[1])
 
-		print(torch.max(out_arousal, 1)[1])
-
-		accuracy = torch.mean((torch.max(out_arousal, 1)[1] == y[:, 0]).float())
-
+		accuracy = torch.mean((out_fusion_max == y[:, 0]).float())
 		accuracy_return = accuracy.data
 
+
+		if (self.iter_epoch % 5 == 0):
+
+			out_fusion_max = out_fusion_max.cpu().data.numpy()
+			targets = targets.cpu().data.numpy()
+
+			print('Precision')
+			print(precision_score(targets, out_fusion_max))
+			print('Recall')
+			print(recall_score(targets, out_fusion_max))
+			print('F1 score')
+			print(f1_score(targets, out_fusion_max))
+			print(out_fusion_max)
+ 	
 
 		return loss_return, accuracy_return
 
@@ -207,13 +225,19 @@ class TrainLoop(object):
 			y = y.cuda()
 			
 
-		out_arousal = self.model.forward_multimodal_arousal(x)
-		loss = F.cross_entropy(out_arousal, y[:, 0])			#checar
+		out_eeg, out_temp_gsr = self.model.forward_multimodal(x)
 
-		loss_return = torch.sum(loss.data)					# If sum receives: i) Tensor (loss.data), it returns a float; ii) Variable (loss), it returns a tensor
+		loss_eeg = F.cross_entropy(out_eeg, y[:, 0])
+		loss_temp_gsr = F.cross_entropy(out_eeg, y[:, 0])
 
-		accuracy = torch.mean((torch.max(out_arousal, 1)[1] == y[:, 0]).float())
+		loss_return = torch.sum(loss_eeg.data) + torch.sum(loss_temp_gsr.data)	# If sum receives: i) Tensor (loss.data), it returns a float; ii) Variable (loss), it returns a tensor
 
+		out_fusion = (out_eeg + out_temp_gsr) / 2
+
+		out_fusion_max = (torch.max(out_fusion, 1)[1])
+
+
+		accuracy = torch.mean((out_fusion_max == y[:, 0]).float())
 		accuracy_return = accuracy.data
 
 		return loss_return, accuracy_return
