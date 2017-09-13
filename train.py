@@ -35,7 +35,7 @@ if args.cuda:
 	#model = torch.nn.DataParallel(model).cuda()
 	model = model.cuda()
 
-optimizer = torch.optim.Adam(model.parameters(), lr = args.lr, weight_decay = args.l2)
+optimizer = torch.optim.RMSprop(model.parameters(), lr = args.lr, weight_decay = args.l2)
 
 trainer = TrainLoop(model, optimizer, args.minibatch_size, checkpoint_path = args.checkpoint_path, checkpoint_epoch = args.checkpoint_epoch, cuda = args.cuda)
 
