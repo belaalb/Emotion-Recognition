@@ -1,7 +1,6 @@
 from torch.autograd import Variable
 import torch
 import torch.nn.functional as F
-import torch.nn as nn
 from DeapDataset import DeapDataset
 from torch.utils.data import DataLoader
 import utils
@@ -169,24 +168,18 @@ class TrainLoop(object):
 			x = x.cuda()
 			y = y.cuda()
 
-		self.optimizer.zero_grad()
-
-		out_eeg, out_temp_gsr = self.model.forward_multimodal(x)
+		out_eeg, out_temp_gsr = self.model.forward_multimodal_arousal(x)
 
 		targets = y[:, 0].contiguous()
 		targets = targets.view(targets.size(0), 1)
 
 
-		loss = nn.CrossEntropyLoss()
-
-		loss_eeg = loss(out_eeg, y[:, 0])
-		loss_temp_gsr = loss(out_temp_gsr, y[:, 0])
-
-		#loss_eeg = F.cross_entropy(out_eeg, y[:, 0])
-		#loss_temp_gsr = F.cross_entropy(out_temp_gsr, y[:, 0])
+		loss_eeg = F.cross_entropy(out_eeg, y[:, 0])
+		loss_temp_gsr = F.cross_entropy(out_temp_gsr, y[:, 0])
 
 		loss_fusion = loss_eeg + loss_temp_gsr
 
+		self.optimizer.zero_grad()
 		loss_fusion.backward()
 		self.optimizer.step()
 
@@ -199,18 +192,8 @@ class TrainLoop(object):
 		accuracy = torch.mean((out_fusion_max == y[:, 0]).float())
 		accuracy_return = accuracy.data
 
-		norms_weights = []
-		norms_grads = []
 
-		for param in list(self.model.parameters()):
-                       norms_weights.append(param.norm(2).data[0])
-                       norms_grads.append(param.grad.norm(2).data[0])
-
-		print (norms_weights)
-		print (norms_grads)
-
-
-		if (self.iter_epoch % 500 == 0):
+		if (self.iter_epoch % 5 == 0):
 
 			out_fusion_max = out_fusion_max.cpu().data.numpy()
 			targets = targets.cpu().data.numpy()
@@ -242,7 +225,7 @@ class TrainLoop(object):
 			y = y.cuda()
 			
 
-		out_eeg, out_temp_gsr = self.model.forward_multimodal(x)
+		out_eeg, out_temp_gsr = self.model.forward_multimodal_arousal(x)
 
 		loss_eeg = F.cross_entropy(out_eeg, y[:, 0])
 		loss_temp_gsr = F.cross_entropy(out_eeg, y[:, 0])
