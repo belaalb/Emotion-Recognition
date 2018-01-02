@@ -15,7 +15,7 @@ The second approach intends to solve two 3-class classification problems to pred
     
 # TO DO:
 Data preparation:
-  1. Overlapping windows
+  1. Overlapping windows ok
   2. Data augmentation for class 0
 Model:
   1. LSTMs
