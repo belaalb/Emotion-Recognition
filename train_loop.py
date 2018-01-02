@@ -178,7 +178,9 @@ class TrainLoop(object):
 
 		loss = nn.CrossEntropyLoss()
 
-		loss_calc = loss(out_eeg, y[:, 0])
+		loss_calc = loss(out, targets)
+
+		print(loss_calc)
 
 		loss_calc.backward()
 		self.optimizer.step()
@@ -207,12 +209,12 @@ class TrainLoop(object):
 			targets = targets.cpu().data.numpy()
 
 			print('Precision')
-			print(precision_score(targets, out_fusion_max))
+			print(precision_score(targets, out_max))
 			print('Recall')
-			print(recall_score(targets, out_fusion_max))
+			print(recall_score(targets, out_max))
 			print('F1 score')
-			print(f1_score(targets, out_fusion_max))
-			print(out_fusion_max)
+			print(f1_score(targets, out_max))
+			print(out_max)
  	
 
 		return loss_return, accuracy_return
@@ -233,19 +235,14 @@ class TrainLoop(object):
 			y = y.cuda()
 			
 
-		out_eeg, out_temp_gsr = self.model.forward_multimodal(x)
+		out = self.model.forward(x)
 
-		loss_eeg = F.cross_entropy(out_eeg, y[:, 0])
-		loss_temp_gsr = F.cross_entropy(out_eeg, y[:, 0])
+		loss_calc = F.cross_entropy(out, y[:, 0])
 
-		loss_return = torch.sum(loss_eeg.data) + torch.sum(loss_temp_gsr.data)	# If sum receives: i) Tensor (loss.data), it returns a float; ii) Variable (loss), it returns a tensor
-
-		out_fusion = (out_eeg + out_temp_gsr) / 2
-
-		out_fusion_max = (torch.max(out_fusion, 1)[1])
+		out_max = (torch.max(out, 1)[1])
 
 
-		accuracy = torch.mean((out_fusion_max == y[:, 0]).float())
+		accuracy = torch.mean((out_max == y[:, 0]).float())
 		accuracy_return = accuracy.data
 
 		return loss_return, accuracy_return

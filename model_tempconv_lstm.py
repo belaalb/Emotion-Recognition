@@ -36,7 +36,9 @@ class model(nn.Module):
 			nn.ReLU(),
 			nn.Conv1d(4, 4, kernel_size = 8),		# 15 - 8 + 1 = 8
 			nn.BatchNorm1d(4),
-			nn.ReLU(),			
+			nn.ReLU())
+
+		self.features_eeg_flatten = nn.Sequential(			
 			nn.Linear(4*8, 16),
 			nn.BatchNorm1d(16),
 			nn.ReLU(),			
@@ -51,7 +53,9 @@ class model(nn.Module):
 			nn.ReLU(),			
 			nn.Conv1d(32, 16, kernel_size = 64),	# 66 - 64 + 1 = 3
 			nn.BatchNorm1d(16),
-			nn.ReLU(),			
+			nn.ReLU())
+
+		self.features_others_flatten = nn.Sequential(			
 			nn.Linear(16*3, 16),
 			nn.BatchNorm1d(16),
 			nn.ReLU(),			
@@ -61,7 +65,7 @@ class model(nn.Module):
 		self.fc_lstm = nn.Linear(4*2, 4)
 
 		# Output layer
-		self.fc_out = nn.Linear(4, 1)
+		self.fc_out = nn.Linear(16, 1)
 			
 
 	def forward(self, x):
@@ -86,15 +90,19 @@ class model(nn.Module):
 
 		#EEG
 		x_eeg = self.features_eeg(x_eeg)
-		
+		x_eeg = x_eeg.view(x_eeg.size(0), -1)
+		x_eeg = self.features_eeg_flatten(x_eeg)
+
 		#Skin temp and GSR
 		x_others  = self.features_others(x_others)
+		x_others = x_others.view(x_others.size(0), -1)
+		x_others = self.features_others_flatten(x_others)
 		
 		concatenated_output = torch.cat([x_eeg, x_others], 1)
 
-		seq_out, _ = self.lstm(concatanated_output, (h0, c0))
+		#seq_out, _ = self.lstm(concatenated_output, (h0, c0))
 
-		output = self.fc_lstm(seq_out)
+		#output = self.fc_lstm(seq_out)
 		output = F.relu(concatenated_output)
 		output = F.sigmoid(self.fc_out(output))
 

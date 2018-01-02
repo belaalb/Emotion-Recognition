@@ -21,13 +21,11 @@ parser.add_argument('--checkpoint-path', type = str, default = None, metavar = '
 parser.add_argument('--seed', type = int, default = 12345, metavar = 'S', help = 'random seed (default: 12345)')
 parser.add_argument('--save-every', type = int, default = None, metavar = 'N', help = 'how many batches to wait before logging training status. If None, cp is done every epoch')
 parser.add_argument('--model', type = int, default = 1, metavar = 'S', help = '0: spatio-temporal conv, 1: temporal conv+lstm')
-
 args = parser.parse_args()
 
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 
 torch.manual_seed(args.seed)
-
 
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
