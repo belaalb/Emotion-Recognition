@@ -4,6 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+# Model 1: Temporal convolution + lstm + feature fusion, for arousal classification
+
 class model(nn.Module):
 	
 	def __init__(self):
@@ -45,7 +47,7 @@ class model(nn.Module):
 			nn.BatchNorm1d(16),
 			nn.ReLU(),			
 			nn.Conv1d(16, 32, kernel_size = 128),	# 193 - 128 + 1 = 66
-			nn.BatchNorm1d()32,
+			nn.BatchNorm1d(32),
 			nn.ReLU(),			
 			nn.Conv1d(32, 16, kernel_size = 64),	# 66 - 64 + 1 = 3
 			nn.BatchNorm1d(16),
@@ -65,6 +67,7 @@ class model(nn.Module):
 	def forward(self, x):
 	
 		x_eeg = x[:, 0:32, :]
+		print(x_eeg.size())
 		x_eog = x[:, 32:34, :]
 		#x_emg = x[:, 34:36, :]
 		
@@ -89,10 +92,10 @@ class model(nn.Module):
 		
 		concatenated_output = torch.cat([x_eeg, x_others], 1)
 
-		seq_out, _ = self.lstm(concatanated, (h0, c0))
+		seq_out, _ = self.lstm(concatanated_output, (h0, c0))
 
 		output = self.fc_lstm(seq_out)
-		output = F.relu(output)
+		output = F.relu(concatenated_output)
 		output = F.sigmoid(self.fc_out(output))
 
 		return output

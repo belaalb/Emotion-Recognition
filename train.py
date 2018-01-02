@@ -2,7 +2,8 @@ from __future__ import print_function
 import argparse
 import torch
 import torch.optim
-import model_valence_eeg_gsr_temp_convtemporal
+import model_spattemporalconv_decision
+import model_tempconv_lstm
 import utils
 from train_loop import TrainLoop
 
@@ -19,6 +20,8 @@ parser.add_argument('--checkpoint-epoch', type = int, default = None, metavar = 
 parser.add_argument('--checkpoint-path', type = str, default = None, metavar = 'Path', help = 'Path for checkpointing')
 parser.add_argument('--seed', type = int, default = 12345, metavar = 'S', help = 'random seed (default: 12345)')
 parser.add_argument('--save-every', type = int, default = None, metavar = 'N', help = 'how many batches to wait before logging training status. If None, cp is done every epoch')
+parser.add_argument('--model', type = int, default = 1, metavar = 'S', help = '0: spatio-temporal conv, 1: temporal conv+lstm')
+
 args = parser.parse_args()
 
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -29,7 +32,11 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-model = model_valence_eeg_gsr_temp_convtemporal.model()
+if (args.model == 0):
+	model = model_spattemporalconv_decision.model()
+elif (args.model == 1):
+	model = model_tempconv_lstm.model()
+
 
 if args.cuda:
 	#model = torch.nn.DataParallel(model).cuda()

@@ -4,6 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+# Model 0: Spatio-temporal convolution + decision fusion, for arousal classification
+
 class model(nn.Module):
 	
 	def __init__(self):
