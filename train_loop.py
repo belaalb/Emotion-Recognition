@@ -171,32 +171,23 @@ class TrainLoop(object):
 
 		self.optimizer.zero_grad()
 
-		out_eeg, out_temp_gsr = self.model.forward_multimodal(x)
+		out = self.model.forward(x)
 
 		targets = y[:, 0].contiguous()
 		targets = targets.view(targets.size(0), 1)
 
-
 		loss = nn.CrossEntropyLoss()
 
-		loss_eeg = loss(out_eeg, y[:, 0])
-		loss_temp_gsr = loss(out_temp_gsr, y[:, 0])
+		loss_calc = loss(out_eeg, y[:, 0])
 
-		#loss_eeg = F.cross_entropy(out_eeg, y[:, 0])
-		#loss_temp_gsr = F.cross_entropy(out_temp_gsr, y[:, 0])
-
-		loss_fusion = loss_eeg + loss_temp_gsr
-
-		loss_fusion.backward()
+		loss_calc.backward()
 		self.optimizer.step()
 
-		loss_return = torch.sum(loss_eeg.data) + torch.sum(loss_temp_gsr.data)
+		loss_return = torch.sum(loss_calc.data)
 		
-		out_fusion = (out_eeg + out_temp_gsr) / 2
+		out_max = (torch.max(out, 1)[1])
 
-		out_fusion_max = (torch.max(out_fusion, 1)[1])
-
-		accuracy = torch.mean((out_fusion_max == y[:, 0]).float())
+		accuracy = torch.mean((out_max == y[:, 0]).float())
 		accuracy_return = accuracy.data
 
 		norms_weights = []
