@@ -244,7 +244,7 @@ def read_hdf_processed_labels_return_size(hdf_filename = 'DEAP_dataset_train.hdf
 	return length
 
 
-def read_hdf_processed_labels_idx(idx, noisy = True, hdf_filename = '/home/isabela/Desktop/emot_recog_class/less_signals_3s_overlap/DEAP_dataset_train.hdf'):
+def read_hdf_processed_labels_idx(idx, noisy = False, hdf_filename = '/home/isabela/Desktop/emot_recog_class/less_signals_3s_overlap/DEAP_dataset_train.hdf'):
 
 	open_file = h5py.File(hdf_filename, 'r')
 	
