@@ -71,7 +71,6 @@ class model(nn.Module):
 	def forward(self, x):
 	
 		x_eeg = x[:, 0:32, :]
-		print(x_eeg.size())
 		x_eog = x[:, 32:34, :]
 		#x_emg = x[:, 34:36, :]
 		
@@ -104,7 +103,7 @@ class model(nn.Module):
 
 		#output = self.fc_lstm(seq_out)
 		output = F.relu(concatenated_output)
-		output = F.sigmoid(self.fc_out(output))
+		output = F.softmax(self.fc_out(output), 0)
 
 		return output
 	

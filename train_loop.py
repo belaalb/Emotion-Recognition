@@ -176,11 +176,7 @@ class TrainLoop(object):
 		targets = y[:, 0].contiguous()
 		targets = targets.view(targets.size(0), 1)
 
-		loss = nn.CrossEntropyLoss()
-
-		loss_calc = loss(out, targets)
-
-		print(loss_calc)
+		loss_calc = F.binary_cross_entropy(out, y[:, 0].float())
 
 		loss_calc.backward()
 		self.optimizer.step()
@@ -192,20 +188,10 @@ class TrainLoop(object):
 		accuracy = torch.mean((out_max == y[:, 0]).float())
 		accuracy_return = accuracy.data
 
-		norms_weights = []
-		norms_grads = []
-
-		for param in list(self.model.parameters()):
-                       norms_weights.append(param.norm(2).data[0])
-                       norms_grads.append(param.grad.norm(2).data[0])
-
-		print (norms_weights)
-		print (norms_grads)
-
 
 		if (self.iter_epoch % 500 == 0):
 
-			out_fusion_max = out_fusion_max.cpu().data.numpy()
+			out_max = out_max.cpu().data.numpy()
 			targets = targets.cpu().data.numpy()
 
 			print('Precision')
@@ -237,7 +223,7 @@ class TrainLoop(object):
 
 		out = self.model.forward(x)
 
-		loss_calc = F.cross_entropy(out, y[:, 0])
+		loss_calc = F.binary_cross_entropy(out, y[:, 0].float())
 
 		out_max = (torch.max(out, 1)[1])
 
