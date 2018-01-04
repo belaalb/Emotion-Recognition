@@ -47,8 +47,10 @@ class DeapDataset(Dataset):
 			for i in range(0, self.seq_length):
 				data, label = utils.read_hdf_processed_labels_idx(idx + i, self.dataset_filename)
 				data_seq.append(data)
-				label_seq.append(label)			
-
+				label_seq.append(label)
+						
+			data_seq = np.asarray(data_seq)
+			label_seq = np.asarray(label_seq[0])
 			sample = {'data': torch.from_numpy(data_seq).float(), 'label': torch.from_numpy(label_seq).long()}
 
 		return sample
