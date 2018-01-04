@@ -22,70 +22,84 @@ class model(nn.Module):
 			nn.Conv1d(64, 64, kernel_size = 64),		# 130 - 64 + 1 = 67
 			nn.BatchNorm1d(64),
 			nn.ReLU(),
-			nn.Conv1d(64, 32, kernel_size = 16),		# 67 - 16 + 1 = 52
-			nn.BatchNorm1d(32),
+			nn.Conv1d(64, 128, kernel_size = 16),		# 67 - 16 + 1 = 52
+			nn.BatchNorm1d(128),
 			nn.ReLU(),
-			nn.Conv1d(32, 16, kernel_size = 16),		# 52 - 16 + 1 = 37
-			nn.BatchNorm1d(16),
+			nn.Conv1d(128, 128, kernel_size = 16),		# 52 - 16 + 1 = 37
+			nn.BatchNorm1d(128),
 			nn.ReLU(),
-			nn.Conv1d(16, 8, kernel_size = 16),		# 37 - 16 + 1 = 22
-			nn.BatchNorm1d(8),
+			nn.Conv1d(128, 256, kernel_size = 16),		# 37 - 16 + 1 = 22
+			nn.BatchNorm1d(256),
 			nn.ReLU(),
-			nn.Conv1d(8, 4, kernel_size = 8),		# 22 - 8 + 1 = 15
-			nn.BatchNorm1d(4),
+			nn.Conv1d(256, 256, kernel_size = 8),		# 22 - 8 + 1 = 15
+			nn.BatchNorm1d(256),
 			nn.ReLU(),
-			nn.Conv1d(4, 4, kernel_size = 8),		# 15 - 8 + 1 = 8
-			nn.BatchNorm1d(4),
+			nn.Conv1d(256, 256, kernel_size = 8),		# 15 - 8 + 1 = 8
+			nn.BatchNorm1d(256),
 			nn.ReLU())
 
 		self.features_eeg_flatten = nn.Sequential(			
-			nn.Linear(4*8, 16),
-			nn.BatchNorm1d(16),
+			nn.Linear(256*8, 1024),
+			nn.BatchNorm1d(1024),
+			nn.ReLU(),
+			nn.Linear(1024, 512),
+			nn.BatchNorm1d(512),
 			nn.ReLU(),			
-			nn.Linear(16, 8))				# Representation to be concatenated
+			nn.Linear(512, 128))				# Representation to be concatenated
 		
 		self.features_others = nn.Sequential(
-			nn.Conv1d(2, 16, kernel_size = 192),	# 384 - 192 + 1 = 193
+			nn.Conv1d(2, 16, kernel_size = 128),	# 384 - 192 + 1 = 257
 			nn.BatchNorm1d(16),
 			nn.ReLU(),			
-			nn.Conv1d(16, 32, kernel_size = 128),	# 193 - 128 + 1 = 66
+			nn.Conv1d(16, 32, kernel_size = 128),	# 257 - 128 + 1 = 130
 			nn.BatchNorm1d(32),
 			nn.ReLU(),			
-			nn.Conv1d(32, 16, kernel_size = 64),	# 66 - 64 + 1 = 3
-			nn.BatchNorm1d(16),
+			nn.Conv1d(32, 64, kernel_size = 64),	# 130 - 64 + 1 = 67
+			nn.BatchNorm1d(64),
+			nn.ReLU(),
+			nn.Conv1d(64, 64, kernel_size = 32),	# 67 - 32 + 1 = 34
+			nn.BatchNorm1d(64),
+			nn.ReLU(),
+			nn.Conv1d(64, 128, kernel_size = 16),	# 34 - 16 + 1 = 17
+			nn.BatchNorm1d(128),
+			nn.ReLU(),
+			nn.Conv1d(128, 128, kernel_size = 8),	# 17 - 8 + 1 = 10
+			nn.BatchNorm1d(128),
 			nn.ReLU())
 
 		self.features_others_flatten = nn.Sequential(			
-			nn.Linear(16*3, 16),
-			nn.BatchNorm1d(16),
+			nn.Linear(128*10, 512),
+			nn.BatchNorm1d(512),
 			nn.ReLU(),			
-			nn.Linear(16, 8))				# Representation to be concatenated
+			nn.Linear(512, 128))				# Representation to be concatenated
 
-		self.lstm = nn.LSTM(16, 4, 2, bidirectional = True)
-		self.fc_lstm = nn.Linear(4*2, 4)
+		self.n_hidden_layers = 1
+		self.hidden_size = 64
+		self.lstm = nn.LSTM(128 + 128, self.hidden_size, self.n_hidden_layers, bidirectional = False)
+		self.fc_lstm = nn.Linear(self.hidden_size*2, 8)
 
 		# Output layer
-		self.fc_out = nn.Linear(16, 1)
+		self.fc_out = nn.Linear(8, 1)
 			
 
 	def forward(self, x):
+
+		mini_batch_size = x.size(0)
+		seq_length = x.size(1)
 	
 		x_eeg = x[:, 0:32, :]
-		x_eog = x[:, 32:34, :]
-		#x_emg = x[:, 34:36, :]
-		
-		#x_resp_ppg = x[:, 37:39, :]
+
+		x_eeg = x_eeg.view(mini_batch_size, seq_length, x_eeg.size(-2), x_eeg.size(-1))
 
 		x_gsr = x[:, 36, :]
 		x_temp = x[:, 39, :]
 
 		x_gsr = x_gsr.contiguous()
 		x_temp = x_temp.contiguous()
-
 		x_gsr = x_gsr.view(x_gsr.size()[0], 1,  x_gsr.size()[1])
 		x_temp = x_temp.view(x_temp.size()[0], 1,  x_temp.size()[1])
-
 		x_others = torch.cat([x_temp, x_gsr], 1)
+		x_others = x_others.view(mini_batch_size, seq_length, x_others.size(-2), x_others.size(-1))
 
 		#EEG
 		x_eeg = self.features_eeg(x_eeg)
@@ -99,9 +113,20 @@ class model(nn.Module):
 		
 		concatenated_output = torch.cat([x_eeg, x_others], 1)
 
-		#seq_out, _ = self.lstm(concatenated_output, (h0, c0))
+		# Reshape lstm input 
+		concatenated_output.view(seq_length, mini_batch_size, concatenated_output.size(-1))
 
-		#output = self.fc_lstm(seq_out)
+		# Initial hidden states
+		h0 = Variable(torch.zeros(self.n_hidden_layers*2, concatenated_output.size(1), self.hidden_size))  
+		c0 = Variable(torch.zeros(self.n_hidden_layers*2, concatenated_output.size(1), self.hidden_size))
+
+		if self.is_cuda():
+			h0 = h0.cuda()
+			c0 = c0.cuda()	
+
+		seq_out, _ = self.lstm(concatenated_output, (h0, c0))
+
+		output = self.fc_lstm(seq_out)
 		output = F.relu(concatenated_output)
 		output = F.softmax(self.fc_out(output), 0)
 

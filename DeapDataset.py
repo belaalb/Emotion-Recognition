@@ -23,7 +23,13 @@ class DeapDataset(Dataset):
 
 	def __len__(self):
 
-		self.length = utils.read_hdf_processed_labels_return_size(self.dataset_filename) - self.seq_length
+		if (self.model_type == 0):
+			self.length = utils.read_hdf_processed_labels_return_size(self.dataset_filename)
+
+		# If LSTM, last index must be smaller
+		elif (self.model_type == 1):
+			self.length = utils.read_hdf_processed_labels_return_size(self.dataset_filename) - self.seq_length
+		
 		return self.length
 
 	def __getitem__(self, idx):
@@ -33,6 +39,7 @@ class DeapDataset(Dataset):
 			data, label = utils.read_hdf_processed_labels_idx(idx, self.dataset_filename)
 			sample = {'data': torch.from_numpy(data).float(), 'label': torch.from_numpy(label).long()}
 		
+		# Get item returns a sequence of samples
 		elif (self.model_type == 1):
 
 			data_seq = []
