@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-# Model 0: Spatio-temporal convolution + decision fusion, for arousal classification
+# Model 0: Spatio-temporal convolution + decision fusion, for valence classification
 
 class model(nn.Module):
 	
@@ -12,7 +12,8 @@ class model(nn.Module):
 
 		super(model, self).__init__()
 
-
+	
+	def __init__(self):
 				
 		# EEG network
 		self.conv1_1_eeg = nn.Conv2d(1, 8, (5, 128))			# 384 - 128 + 1 = 257; 32 - 5 + 1 = 28

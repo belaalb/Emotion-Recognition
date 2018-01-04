@@ -7,7 +7,7 @@ import h5py
 from numpy.lib.stride_tricks import as_strided
 
 
-def load_dataset_per_subject(sub = 1, main_dir = '/home/isabela/Desktop/emot_recog_class/data_preprocessed_python/'):
+def load_dataset_per_subject(sub = 1, main_dir = './data_preprocessed_python/'):
 
 	if (sub < 10):
 		sub_code = str('s0' + str(sub) + '.dat')
@@ -64,7 +64,7 @@ def labels_quantization(labels):
 
 
 
-def split_data_per_subject(sub = 1, segment_duration = 3, sampling_rate = 128, main_dir = '/home/isabela/Desktop/emot_recog_class/data_preprocessed_python/'):
+def split_data_per_subject(sub = 1, segment_duration = 3, sampling_rate = 128, main_dir = './data_preprocessed_python/'):
 
 	data, labels = load_dataset_per_subject(sub, main_dir)
 	number_of_samples = segment_duration*sampling_rate
@@ -92,7 +92,7 @@ def split_data_per_subject(sub = 1, segment_duration = 3, sampling_rate = 128, m
 	return final_data_out, final_labels_out
 
 
-def split_data_per_subject_overlapping(sub = 1, window_duration = 3, sampling_rate = 128, strides = 1, main_dir = '/home/isabela/Desktop/emot_recog_class/data_preprocessed_python/'):
+def split_data_per_subject_overlapping(sub = 1, window_duration = 3, sampling_rate = 128, strides = 1, main_dir = './data_preprocessed_python/'):
 
 
 	data, labels = load_dataset_per_subject(sub, main_dir)
@@ -130,7 +130,7 @@ def split_data_per_subject_overlapping(sub = 1, window_duration = 3, sampling_ra
 	return final_data_out, final_labels_out
 
 
-def create_hdf(subjects_number = 32, hdf_filename = '/home/isabela/Desktop/emot_recog_class/less_signals_3s_overlap/DEAP_dataset_subjects_list.hdf'):
+def create_hdf(subjects_number = 32, hdf_filename = 'DEAP_dataset_subjects_list.hdf'):
 
 	complete_data = []
 	complete_labels = []
@@ -144,16 +144,13 @@ def create_hdf(subjects_number = 32, hdf_filename = '/home/isabela/Desktop/emot_
 	complete_data = np.asarray(complete_data)
 	complete_labels = np.asarray(complete_labels)
 
-	print(complete_data.shape)
-	print(complete_labels.shape)	
-
 	complete_dataset_file = h5py.File(hdf_filename, 'w')
 	complete_dataset = complete_dataset_file.create_dataset('data', data = complete_data)
 	complete_dataset = complete_dataset_file.create_dataset('labels', data = complete_labels)
 	complete_dataset_file.close()
 
 
-def merge_shuffle_norm_split_tvt_store_as_hdf(hdf_filename_to_read = '/home/isabela/Desktop/emot_recog_class/less_signals_3s_overlap/DEAP_dataset_subjects_list.hdf', hdf_filename_to_save_train = '/home/isabela/Desktop/emot_recog_class/less_signals_3s_overlap/DEAP_dataset_train.hdf', hdf_filename_to_save_valid = '/home/isabela/Desktop/emot_recog_class/less_signals_3s_overlap/DEAP_dataset_valid.hdf'):
+def merge_shuffle_norm_split_tvt_store_as_hdf(hdf_filename_to_read = 'DEAP_dataset_subjects_list.hdf', hdf_filename_to_save_train = 'DEAP_dataset_train.hdf', hdf_filename_to_save_valid = './DEAP_dataset_valid.hdf'):
 
 	#tvt: train, valid, test
 
@@ -244,7 +241,7 @@ def read_hdf_processed_labels_return_size(hdf_filename = 'DEAP_dataset_train.hdf
 	return length
 
 
-def read_hdf_processed_labels_idx(idx, noisy = False, hdf_filename = '/home/isabela/Desktop/emot_recog_class/less_signals_3s_overlap/DEAP_dataset_train.hdf'):
+def read_hdf_processed_labels_idx(idx, noisy = False, hdf_filename = 'DEAP_dataset_train.hdf'):
 
 	open_file = h5py.File(hdf_filename, 'r')
 	
@@ -260,7 +257,7 @@ def read_hdf_processed_labels_idx(idx, noisy = False, hdf_filename = '/home/isab
 	return data, labels_val
 
 
-def calculate_weights(root = "/home/isabela/Desktop/emot_recog_class/less_signals_3s_overlap/DEAP_dataset", step = "train"):
+def calculate_weights(root = "DEAP_dataset", step = "train"):
 
 	if (step == "train"):
 		dataset_filename = root + "_train.hdf"
@@ -288,11 +285,11 @@ def calculate_weights(root = "/home/isabela/Desktop/emot_recog_class/less_signal
 
 if __name__ == '__main__':
 
-	#create_hdf()
+	create_hdf()
 
 	merge_shuffle_norm_split_tvt_store_as_hdf()
 	
-	data, labels_val = read_hdf_processed_labels('/home/isabela/Desktop/emot_recog_class/less_signals_3s_overlap/DEAP_dataset_train.hdf')
+	data, labels_val = read_hdf_processed_labels('DEAP_dataset_train.hdf')
 	print(data.shape)
 	print(labels_val.shape)
 

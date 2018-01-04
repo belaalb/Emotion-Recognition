@@ -6,7 +6,7 @@ import torch.optim as optim
 from torch.autograd import Variable
 
 
-# Model 1: Temporal convolution + lstm + feature fusion, for arousal classification
+# Model 1: Temporal convolution + lstm + feature fusion, for valence classification
 
 class model(nn.Module):
 	
