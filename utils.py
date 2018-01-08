@@ -291,12 +291,13 @@ if __name__ == '__main__':
 
 	#create_hdf()
 
-	merge_shuffle_norm_split_tvt_store_as_hdf()
+	#merge_shuffle_norm_split_tvt_store_as_hdf()
 	
-	data, labels_val = read_hdf_processed_labels('DEAP_dataset_train.hdf')
+	data, labels_val = read_hdf_processed_labels('DEAP_dataset_valid.hdf')
 	print(data.shape)
 	print(labels_val.shape)
 
+	print(data[10])
 
 	print('Label 0', sum(labels_val[:, 0] == 0))	
 	print('Label 1', sum(labels_val[:, 0] == 1))

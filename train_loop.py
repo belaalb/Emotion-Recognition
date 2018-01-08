@@ -56,9 +56,8 @@ class TrainLoop(object):
 		reciprocal_weights_train, length_train = utils.calculate_weights(step = 'train')
 		self.weight_train = 1 / torch.DoubleTensor(reciprocal_weights_train)
 		self.dataset_train = DeapDataset(step = 'train', model_type = self.model_type, seq_length = self.seq_length)
-		print('dataset length:', self.dataset_train.__len__())
 		self.sampler_train = torch.utils.data.sampler.WeightedRandomSampler(self.weight_train, length_train)
-		self.dataloader_train = DataLoader(self.dataset_train, self.minibatch_size, shuffle = False)
+		self.dataloader_train = DataLoader(self.dataset_train, self.minibatch_size, shuffle = True)
 
 
 		reciprocal_weights_valid, length_valid = utils.calculate_weights(step = 'valid')
@@ -84,7 +83,7 @@ class TrainLoop(object):
 			self.iter_epoch = 0.0
 			
 
-			print('Epoch {}/{}'.format(self.cur_epoch+1, n_epochs))
+			print('Epoch {}/{}'.format(self.cur_epoch + 1, n_epochs))
 			train_iter = tqdm(enumerate(self.dataloader_train))
 
 			print(train_iter)
@@ -96,11 +95,11 @@ class TrainLoop(object):
 				loss, acc = self.train_step(batch)
 
 				self.history['train_loss'].append(loss)	
-				
+
 				train_loss_sum += loss
 				self.total_iters += 1
 				self.iter_epoch += 1
-				
+
 				train_accuracy += acc
 
 				print(acc)
@@ -184,11 +183,13 @@ class TrainLoop(object):
 		self.optimizer.step()
 
 		loss_return = torch.sum(loss_calc.data)
+
+		print(loss_return)
 		
 		out_max = (torch.max(out, 1)[1])
 
 		accuracy = torch.mean((out_max == y[:, 0]).float())
-		accuracy_return = accuracy.data
+		accuracy_return = accuracy.data[0]
 
 
 		if (self.iter_epoch % 501 == 0):
@@ -227,11 +228,12 @@ class TrainLoop(object):
 
 		loss_return = F.binary_cross_entropy(out, y[:, 0].float())
 
+		loss_return = loss_return.data[0]
+
 		out_max = (torch.max(out, 1)[1])
 
-
 		accuracy = torch.mean((out_max == y[:, 0]).float())
-		accuracy_return = accuracy.data
+		accuracy_return = accuracy.data[0]
 
 		return loss_return, accuracy_return
 
