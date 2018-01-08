@@ -56,8 +56,9 @@ class TrainLoop(object):
 		reciprocal_weights_train, length_train = utils.calculate_weights(step = 'train')
 		self.weight_train = 1 / torch.DoubleTensor(reciprocal_weights_train)
 		self.dataset_train = DeapDataset(step = 'train', model_type = self.model_type, seq_length = self.seq_length)
+		print('dataset length:', self.dataset_train.__len__())
 		self.sampler_train = torch.utils.data.sampler.WeightedRandomSampler(self.weight_train, length_train)
-		self.dataloader_train = DataLoader(self.dataset_train, self.minibatch_size, shuffle = False, sampler = self.sampler_train)
+		self.dataloader_train = DataLoader(self.dataset_train, self.minibatch_size, shuffle = False)
 
 
 		reciprocal_weights_valid, length_valid = utils.calculate_weights(step = 'valid')
@@ -190,7 +191,7 @@ class TrainLoop(object):
 		accuracy_return = accuracy.data
 
 
-		if (self.iter_epoch % 500 == 0):
+		if (self.iter_epoch % 501 == 0):
 
 			out_max = out_max.cpu().data.numpy()
 			targets = targets.cpu().data.numpy()
@@ -224,7 +225,7 @@ class TrainLoop(object):
 
 		out = self.model.forward(x)
 
-		loss_calc = F.binary_cross_entropy(out, y[:, 0].float())
+		loss_return = F.binary_cross_entropy(out, y[:, 0].float())
 
 		out_max = (torch.max(out, 1)[1])
 

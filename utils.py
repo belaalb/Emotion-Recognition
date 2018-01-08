@@ -57,8 +57,12 @@ def labels_quantization(labels):
 
 	labels_val = np.zeros([labels.shape[0], 1]);
 
-	labels_val[(1 <= labels[:, 0]) & (labels[:, 0] <= 5), 0] = 0
-	labels_val[(5 < labels[:, 0]) & (labels[:, 0] <= 9), 0] = 1 
+	median = np.median(labels)
+
+	print(median)
+
+	labels_val[(1 <= labels[:, 0]) & (labels[:, 0] <= median), 0] = 0
+	labels_val[(median < labels[:, 0]) & (labels[:, 0] <= 9), 0] = 1 
 
 	return labels_val
 
@@ -285,7 +289,7 @@ def calculate_weights(root = "DEAP_dataset", step = "train"):
 
 if __name__ == '__main__':
 
-	create_hdf()
+	#create_hdf()
 
 	merge_shuffle_norm_split_tvt_store_as_hdf()
 	

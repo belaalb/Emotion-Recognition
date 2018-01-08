@@ -34,7 +34,7 @@ class DeapDataset(Dataset):
 	def __getitem__(self, idx):
 
 		if (self.model_type == 0):
-			data_file = h5py.File(hdf_filename, 'r')
+			data_file = h5py.File(self.dataset_filename, 'r')
 	
 			data = data_file['data'][idx]
 			label = data_file['labels_val'][idx]
@@ -49,7 +49,8 @@ class DeapDataset(Dataset):
 			data_seq = []
 			label_seq = []			
 			for i in range(self.seq_length):
-				data_file = h5py.File(hdf_filename, 'r')
+				#print('index', idx)
+				data_file = h5py.File(self.dataset_filename, 'r')
 	
 				data = data_file['data'][idx + i]
 				label = data_file['labels_val'][idx + i]
