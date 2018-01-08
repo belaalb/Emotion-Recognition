@@ -111,15 +111,12 @@ class model(nn.Module):
 		x_others  = self.features_others(x_others)
 		x_others = x_others.view(x_others.size(0), -1)
 
-		print(x_others.size())
 		x_others = self.features_others_flatten(x_others)
 		
 		concatenated_output = torch.cat([x_eeg, x_others], 1)
 
 		# Reshape lstm input 
 		concatenated_output = concatenated_output.view(seq_length, minibatch_size, concatenated_output.size(-1))
-
-		print(concatenated_output.size())
 
 		# Initial hidden states
 		h0 = Variable(torch.zeros(self.n_hidden_layers, concatenated_output.size(1), self.hidden_size))  
