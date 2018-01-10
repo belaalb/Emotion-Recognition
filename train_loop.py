@@ -20,7 +20,7 @@ from sklearn.metrics import precision_score, f1_score, recall_score
 
 class TrainLoop(object):
 
-	def __init__(self, model, optimizer, minibatch_size, model_type = 0, seq_length = 3, checkpoint_path = None, checkpoint_epoch = None, cuda = True):
+	def __init__(self, model, optimizer, minibatch_size, seq_length = 3, checkpoint_path = None, checkpoint_epoch = None, cuda = True):
 		
 		if checkpoint_path is None:
 
@@ -55,7 +55,12 @@ class TrainLoop(object):
 
 		reciprocal_weights_train, length_train = utils.calculate_weights(step = 'train')
 		self.weight_train = 1 / torch.DoubleTensor(reciprocal_weights_train)
+<<<<<<< HEAD
+		self.dataset_train = DeapDataset(step = 'train', seq_length = self.seq_length)
+		print('dataset length:', self.dataset_train.__len__())
+=======
 		self.dataset_train = DeapDataset(step = 'train', model_type = self.model_type, seq_length = self.seq_length)
+>>>>>>> a66f1dcce3c21e787912d61ecf9b0a0b3c608f2e
 		self.sampler_train = torch.utils.data.sampler.WeightedRandomSampler(self.weight_train, length_train)
 		self.dataloader_train = DataLoader(self.dataset_train, self.minibatch_size, shuffle = True)
 
@@ -63,7 +68,7 @@ class TrainLoop(object):
 		reciprocal_weights_valid, length_valid = utils.calculate_weights(step = 'valid')
 
 		self.weight_valid = 1 / torch.DoubleTensor(reciprocal_weights_valid)
-		self.dataset_valid = DeapDataset(step = 'valid', model_type = self.model_type, seq_length = self.seq_length)
+		self.dataset_valid = DeapDataset(step = 'valid', seq_length = self.seq_length)
 		self.sampler_valid = torch.utils.data.sampler.WeightedRandomSampler(self.weight_valid, length_valid)
 		self.dataloader_valid = DataLoader(self.dataset_valid, self.minibatch_size)
 

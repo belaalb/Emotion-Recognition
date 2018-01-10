@@ -20,7 +20,6 @@ parser.add_argument('--checkpoint-epoch', type = int, default = None, metavar = 
 parser.add_argument('--checkpoint-path', type = str, default = None, metavar = 'Path', help = 'Path for checkpointing')
 parser.add_argument('--seed', type = int, default = 12345, metavar = 'S', help = 'random seed (default: 12345)')
 parser.add_argument('--save-every', type = int, default = None, metavar = 'N', help = 'how many batches to wait before logging training status. If None, cp is done every epoch')
-parser.add_argument('--model', type = int, default = 1, metavar = 'S', help = '0: spatio-temporal conv, 1: temporal conv+lstm')
 parser.add_argument('--seq-length', type = int, default = 3, metavar = 'S', help = 'Length of long-term dependence')
 args = parser.parse_args()
 
@@ -43,7 +42,7 @@ if args.cuda:
 
 optimizer = torch.optim.RMSprop(model.parameters(), lr = args.lr, weight_decay = args.l2)
 
-trainer = TrainLoop(model, optimizer, args.minibatch_size, model_type = args.model, seq_length = args.seq_length, checkpoint_path = args.checkpoint_path, checkpoint_epoch = args.checkpoint_epoch, cuda = args.cuda)
+trainer = TrainLoop(model, optimizer, args.minibatch_size, seq_length = args.seq_length, checkpoint_path = args.checkpoint_path, checkpoint_epoch = args.checkpoint_epoch, cuda = args.cuda)
 
 print('Cuda Mode is: {}'.format(args.cuda))
 
