@@ -79,25 +79,35 @@ def merge_all_subjects(n_subjects = 32, hdf_filename = 'DEAP_dataset_subjects_li
 	
 	complete_dataset_file.close()
 
-def labels_quantization(labels):
+def rescale_labels_quantization(n_subjects = 32, seq_length = 20, hdf_filename = 'DEAP_dataset_subjects_list.hdf'):
 
-	labels_val = np.zeros([labels.shape[0], 1]);
+	data = h5py.File(hdf_filename, 'r')
 
-	median = np.median(labels)
+	all_data = []
+	all_labels = []
 
-	print(median)
+	for sub in range(1, n_subjects + 1):
+		data_key = str('data_s' + str(sub))		
+		labels_key = str('labels_s' + str(sub))
+		all_data.append(data[data_key])		
+		all_labels.append(data[labels_key][:, :-1*seq_length])
+	
+	all_data = np.asarray(all_data)
+	print(all_data.shape)
+	all_labels = np.asarray(all_labels)
+	print(all_labels.shape)	
 
-	labels_val[(1 <= labels[:, 0]) & (labels[:, 0] <= median), 0] = 0
-	labels_val[(median < labels[:, 0]) & (labels[:, 0] <= 9), 0] = 1 
+	# Labels quantization by the median
+	valence_median = median(all_labels[:, 0])
+	arousal_median = median(all_labels[:, 1])
 
 	return labels_val
 
 #def rescale():
 
 if __name__ == '__main__':
-	#data_seq, labels = split_data_per_subject()
 	merge_all_subjects()
-	
+	rescale_labels_quantization()
 
 	
 
