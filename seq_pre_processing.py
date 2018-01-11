@@ -51,35 +51,32 @@ def split_data_per_subject(sub = 1, segment_duration = 1, seq_length = 20, sampl
 	data_seq = []
 
 	for ex in range(n_examples - seq_length):
+		
 		example_seq = []
+
 		for idx in range(seq_length):
-			example_seq.append(data_non_seq[ex + idx, :, :])
 			
+			example_seq.append(data_non_seq[ex + idx, :, :])
+
+		example_seq = np.reshape(np.asarray(example_seq), (seq_length, data.shape[1], n_points))
 		data_seq.append(example_seq)
 
-	print(len(data_seq[0]))
-
-	data_seq = np.reshape(np.asarray(data_seq, (len(data_seq), seq_length, data.shape[1], n_points)))
+	data_seq = np.reshape(np.asarray(data_seq), (len(data_seq), seq_length, data.shape[1], n_points))
 
 	return data_seq, labels
 
-def merge_all_subjects(subjects_number = 32, hdf_filename = 'DEAP_dataset_subjects_list.hdf'):
-
-	complete_data = []
-	complete_labels = []
-
-	for sub in range(1, subjects_number+1):
-
-		data_sub, labels_sub = split_data_per_subject_overlapping(sub)
-		complete_data.append(data_sub)
-		complete_labels.append(labels_sub)
-
-	complete_data = np.asarray(complete_data)
-	complete_labels = np.asarray(complete_labels)
+def merge_all_subjects(n_subjects = 32, hdf_filename = 'DEAP_dataset_subjects_list.hdf'):
 
 	complete_dataset_file = h5py.File(hdf_filename, 'w')
-	complete_dataset = complete_dataset_file.create_dataset('data', data = complete_data)
-	complete_dataset = complete_dataset_file.create_dataset('labels', data = complete_labels)
+
+	for sub in range(1, n_subjects + 1):
+
+		data_sub, labels_sub = split_data_per_subject(sub, seq_length = 20)
+		data_key = str('data_s' + str(sub))
+		labels_key = str('labels_s' + str(sub))
+		complete_dataset = complete_dataset_file.create_dataset(data_key, data = data_sub)
+		complete_dataset = complete_dataset_file.create_dataset(labels_key, data = labels_sub)
+	
 	complete_dataset_file.close()
 
 def labels_quantization(labels):
@@ -98,8 +95,9 @@ def labels_quantization(labels):
 #def rescale():
 
 if __name__ == '__main__':
-	split_data_per_subject()
-
+	#data_seq, labels = split_data_per_subject()
+	merge_all_subjects()
+	
 
 	
 
