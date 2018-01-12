@@ -22,7 +22,7 @@ def load_dataset_per_subject(sub = 1, main_dir = './data_preprocessed_python/'):
 	return data, labels
 
 
-def split_data_per_subject(sub = 1, segment_duration = 1, seq_length = 20, sampling_rate = 128, main_dir = './data_preprocessed_python/'):
+def split_data_per_subject(sub = 1, segment_duration = 1, seq_length = 10, sampling_rate = 128, main_dir = './data_preprocessed_python/'):
 
 	data, labels = load_dataset_per_subject(sub, main_dir)
 	n_points = segment_duration*sampling_rate
@@ -47,6 +47,7 @@ def split_data_per_subject(sub = 1, segment_duration = 1, seq_length = 20, sampl
 	data_non_seq = np.reshape(np.asarray(data_non_seq), (n_examples, data.shape[1], n_points))
 	labels = np.reshape(np.asarray(labels_expanded), (n_examples, labels.shape[1]))
 
+	data_non_seq_res = rescale(data_non_seq)	
 
 	data_seq = []
 
@@ -56,58 +57,71 @@ def split_data_per_subject(sub = 1, segment_duration = 1, seq_length = 20, sampl
 
 		for idx in range(seq_length):
 			
-			example_seq.append(data_non_seq[ex + idx, :, :])
+			example_seq.append(data_non_seq_res[ex + idx, :, :])
 
 		example_seq = np.reshape(np.asarray(example_seq), (seq_length, data.shape[1], n_points))
 		data_seq.append(example_seq)
-
+	
 	data_seq = np.reshape(np.asarray(data_seq), (len(data_seq), seq_length, data.shape[1], n_points))
+
+	labels = labels_quantization(labels)
 
 	return data_seq, labels
 
-def merge_all_subjects(n_subjects = 32, hdf_filename = 'DEAP_dataset_subjects_list.hdf'):
+def rescale(data_non_seq):
 
-	complete_dataset_file = h5py.File(hdf_filename, 'w')
+	max_per_channel = np.max(np.max(data_non_seq, axis = 2), axis = 0)
+	min_per_channel = np.min(np.min(data_non_seq, axis = 2), axis = 0)
+
+	for sample in data_non_seq:
+		for channel in range(0, data_non_seq.shape[1]):
+			sample[channel, :] = (sample[channel, :] - min_per_channel[channel]) / (max_per_channel[channel] - min_per_channel[channel])
+	
+	return data_non_seq
+
+def labels_quantization(labels):
+
+	median_val = np.median(labels[:, 0])
+	median_arousal = np.median(labels[:, 1])
+
+	labels_val = np.zeros(labels.shape[0])
+	labels_arousal = np.zeros(labels.shape[0])
+
+	labels_val[(1 <= labels[:, 0]) & (labels[:, 0] <= median_val)] = 0
+	labels_val[(median_val < labels[:, 0]) & (labels[:, 0] <= 9)] = 1
+
+	labels_arousal[(1 <= labels[:, 1]) & (labels[:, 1] <= median_arousal)] = 0
+	labels_arousal[(median_arousal < labels[:, 1]) & (labels[:, 1] <= 9)] = 1
+
+	labels[:, 0] = labels_val
+	labels[:, 1] = labels_arousal
+	labels = labels[:, 0:2]
+
+	return labels	
+	
+	
+def merge_all_subjects(n_subjects = 32, hdf_filename = 'DEAP_complete_sequence.hdf'):
+
+	complete_dataset = h5py.File(hdf_filename, 'w')
 
 	for sub in range(1, n_subjects + 1):
 
-		data_sub, labels_sub = split_data_per_subject(sub, seq_length = 20)
+		data_sub, labels_sub = split_data_per_subject(sub, seq_length = 10)
 		data_key = str('data_s' + str(sub))
 		labels_key = str('labels_s' + str(sub))
-		complete_dataset = complete_dataset_file.create_dataset(data_key, data = data_sub)
-		complete_dataset = complete_dataset_file.create_dataset(labels_key, data = labels_sub)
+		complete_dataset[data_key] = data_sub
+		complete_dataset[labels_key] = labels_sub
 	
-	complete_dataset_file.close()
-
-def rescale_labels_quantization(n_subjects = 32, seq_length = 20, hdf_filename = 'DEAP_dataset_subjects_list.hdf'):
-
-	data = h5py.File(hdf_filename, 'r')
-
-	all_data = []
-	all_labels = []
-
-	for sub in range(1, n_subjects + 1):
-		data_key = str('data_s' + str(sub))		
-		labels_key = str('labels_s' + str(sub))
-		all_data.append(data[data_key])		
-		all_labels.append(data[labels_key][:, :-1*seq_length])
-	
-	all_data = np.asarray(all_data)
-	print(all_data.shape)
-	all_labels = np.asarray(all_labels)
-	print(all_labels.shape)	
-
-	# Labels quantization by the median
-	valence_median = median(all_labels[:, 0])
-	arousal_median = median(all_labels[:, 1])
-
-	return labels_val
-
-#def rescale():
+	complete_dataset.close()
 
 if __name__ == '__main__':
 	merge_all_subjects()
-	rescale_labels_quantization()
 
+	open_file = h5py.File('DEAP_complete_sequence.hdf', 'r')
 	
+	data = open_file['data_s32']
+	labels = open_file['labels_s32']
+
+	print(data.shape)
+	print(labels.shape)
 
