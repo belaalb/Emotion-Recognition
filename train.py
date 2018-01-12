@@ -8,7 +8,7 @@ from train_loop import TrainLoop
 
 # Training settings
 parser = argparse.ArgumentParser(description = 'Online transfer learning for emotion recognition tasks')
-parser.add_argument('--minibatch-size', type = int, default = 64, metavar = 'N', help = 'input batch size for training (default: 64)')
+parser.add_argument('--minibatch-size', type = int, default = 128, metavar = 'N', help = 'input batch size for training (default: 64)')
 parser.add_argument('--valid-batch-size', type = int, default = 1000, metavar = 'N', help = 'input batch size for testing (default: 1000)')
 parser.add_argument('--epochs', type = int, default = 500, metavar = 'N', help = 'number of epochs to train (default: 200)')
 parser.add_argument('--patience', type = int, default = 30, metavar = 'N', help = 'number of epochs without improvement to wait before stopping training (default: 30)')
@@ -28,7 +28,7 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-model = model_tempconv_lstm.model()
+model = model_tempconv_lstm.model_eeg()
 
 
 if args.cuda:

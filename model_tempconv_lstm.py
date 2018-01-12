@@ -5,8 +5,11 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
 
-
-# Model 1: Temporal convolution + lstm + feature fusion, for valence classification
+'''
+Model 1: Temporal convolution + lstm + feature fusion, for valence classification
+- EEG + GSR and skin temperature
+- 3 seconds long samples
+'''
 
 class model(nn.Module):
 	
@@ -134,6 +137,95 @@ class model(nn.Module):
 
 		return output
 	
+'''
+Model 2: Temporal convolution + lstm for valence classification
+- Only EEG 
+- 1 second long samples
+'''
+
+class model_eeg(nn.Module):
+	
+	def __init__(self):
+
+		super(model_eeg, self).__init__()
+
+		self.features_eeg = nn.Sequential(
+			nn.Conv1d(32, 48, kernel_size = 32, bias = False),		# 128 - 32 + 1 = 97
+			nn.BatchNorm1d(48),
+			nn.ReLU(),
+			nn.Conv1d(48, 64, kernel_size = 32, bias = False),		# 97 - 32 + 1 = 66
+			nn.BatchNorm1d(64),
+			nn.ReLU(),
+			nn.Conv1d(64, 64, kernel_size = 16, bias = False),		# 66 - 16 + 1 = 51
+			nn.BatchNorm1d(64),
+			nn.ReLU(),
+			nn.Conv1d(64, 128, kernel_size = 16, bias = False),		# 51 - 16 + 1 = 36
+			nn.BatchNorm1d(128),
+			nn.ReLU(),
+			nn.Conv1d(128, 128, kernel_size = 16, bias = False),		# 36 - 16 + 1 = 21
+			nn.BatchNorm1d(128),
+			nn.ReLU(),
+			nn.Conv1d(128, 256, kernel_size = 8, bias = False),		# 21 - 8 + 1 = 14
+			nn.BatchNorm1d(256),
+			nn.ReLU(),
+			nn.Conv1d(256, 256, kernel_size = 4, bias = False),		# 14 - 4 + 1 = 11
+			nn.BatchNorm1d(256),
+			nn.ReLU(),
+			nn.Conv1d(256, 256, kernel_size = 4, bias = False),		# 11 - 4 + 1 = 8
+			nn.BatchNorm1d(256),
+			nn.ReLU())
+
+		self.features_eeg_flatten = nn.Sequential(			
+			nn.Linear(256*8, 1024, bias = False),
+			nn.BatchNorm1d(1024),
+			nn.ReLU(),
+			nn.Linear(1024, 512, bias = False),
+			nn.BatchNorm1d(512),
+			nn.ReLU(),			
+			nn.Linear(512, 128))				# Representation to be concatenated
+		
+		self.n_hidden_layers = 1
+		self.hidden_size = 64
+		self.lstm = nn.LSTM(128, self.hidden_size, self.n_hidden_layers, bidirectional = False)
+		self.fc_lstm = nn.Linear(self.hidden_size, 8)
+
+		# Output layer
+		self.fc_out = nn.Linear(8, 1)
+			
+
+	def forward(self, x):
+
+		minibatch_size = x.size(0)
+		seq_length = x.size(1)
+	
+		x_eeg = x[:, :, 0:32, :]
+		x_eeg = x_eeg.contiguous()
+		x_eeg = x_eeg.view(minibatch_size*seq_length, x_eeg.size(-2), x_eeg.size(-1))
+
+		#EEG
+		x_eeg = self.features_eeg(x_eeg)
+		x_eeg = x_eeg.view(x_eeg.size(0), -1)
+		x_eeg = self.features_eeg_flatten(x_eeg)
+
+		
+		# Reshape lstm input 
+		lstm_input = x_eeg.view(seq_length, minibatch_size, x_eeg.size(-1))
+
+		# Initial hidden states
+		h0 = Variable(torch.zeros(self.n_hidden_layers, lstm_input.size(1), self.hidden_size))  
+		c0 = Variable(torch.zeros(self.n_hidden_layers, lstm_input.size(1), self.hidden_size))
+
+		if x.is_cuda:
+			h0 = h0.cuda()
+			c0 = c0.cuda()	
+
+		seq_out, _ = self.lstm(lstm_input, (h0, c0))
+
+		output = self.fc_lstm(seq_out[-1])
+		output = F.relu(output)
+		output = F.softmax(self.fc_out(output), 0)
+
+		return output
 		
 
 		

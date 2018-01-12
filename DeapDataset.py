@@ -43,7 +43,7 @@ class DeapDataset(Dataset):
 
 		data_file.close()
 				
-		sample = {'data': torch.from_numpy(data).float(), 'label': label[0]}		# Only valence label!!
+		sample = {'data': torch.from_numpy(data).float(), 'label': torch.from_numpy(label).long()}		# Only valence label!!
 
 		return sample
 
