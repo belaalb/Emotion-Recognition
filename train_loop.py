@@ -4,7 +4,6 @@ import torch.nn.functional as F
 import torch.nn as nn
 from DeapDataset import DeapDataset
 from torch.utils.data import DataLoader
-import utils
 
 import numpy as np
 import pickle
@@ -20,7 +19,7 @@ from sklearn.metrics import precision_score, f1_score, recall_score
 
 class TrainLoop(object):
 
-	def __init__(self, model, optimizer, minibatch_size, seq_length = 3, checkpoint_path = None, checkpoint_epoch = None, cuda = True):
+	def __init__(self, model, optimizer, minibatch_size, checkpoint_path = None, checkpoint_epoch = None, cuda = True):
 		
 		if checkpoint_path is None:
 
@@ -33,8 +32,6 @@ class TrainLoop(object):
 
 				os.mkdir(self.checkpoint_path)
 	
-		self.model_type = model_type
-		self.seq_length = seq_length
 		self.save_every_fmt = os.path.join(self.checkpoint_path, 'checkpoint_{}it.pt')
 		self.save_epoch_fmt = os.path.join(self.checkpoint_path, 'checkpoint_{}ep.pt')
 		self.cuda_mode = cuda
@@ -53,27 +50,11 @@ class TrainLoop(object):
 			self.load_checkpoint(self.save_epoch_fmt.format(checkpoint_epoch))
 
 
-		reciprocal_weights_train, length_train = utils.calculate_weights(step = 'train')
-		self.weight_train = 1 / torch.DoubleTensor(reciprocal_weights_train)
-<<<<<<< HEAD
-		self.dataset_train = DeapDataset(step = 'train', seq_length = self.seq_length)
-		print('dataset length:', self.dataset_train.__len__())
-=======
-		self.dataset_train = DeapDataset(step = 'train', model_type = self.model_type, seq_length = self.seq_length)
->>>>>>> a66f1dcce3c21e787912d61ecf9b0a0b3c608f2e
-		self.sampler_train = torch.utils.data.sampler.WeightedRandomSampler(self.weight_train, length_train)
+		self.dataset_train = DeapDataset(step = 'train')
 		self.dataloader_train = DataLoader(self.dataset_train, self.minibatch_size, shuffle = True)
 
-
-		reciprocal_weights_valid, length_valid = utils.calculate_weights(step = 'valid')
-
-		self.weight_valid = 1 / torch.DoubleTensor(reciprocal_weights_valid)
-		self.dataset_valid = DeapDataset(step = 'valid', seq_length = self.seq_length)
-		self.sampler_valid = torch.utils.data.sampler.WeightedRandomSampler(self.weight_valid, length_valid)
+		self.dataset_valid = DeapDataset(step = 'valid')
 		self.dataloader_valid = DataLoader(self.dataset_valid, self.minibatch_size)
-
-
-
 
 
 	def train(self, n_epochs = 1, patience = 100, n_workers = 1, tl_delay = 1, save_every = None):

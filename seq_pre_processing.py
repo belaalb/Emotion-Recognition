@@ -4,8 +4,6 @@ import pickle
 import os, sys
 import h5py
 
-from numpy.lib.stride_tricks import as_strided
-
 
 def load_dataset_per_subject(sub = 1, main_dir = './data_preprocessed_python/'):
 

@@ -4,7 +4,6 @@ import h5py
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 
-import utils
 
 class DeapDataset(Dataset):
 
@@ -19,8 +18,6 @@ class DeapDataset(Dataset):
 			self.dataset_filename = root + "valid.hdf"
 			self.n_sub = 3		# 3 last subjects from validation
 			data_key = 'data_s32'	# key for any subject. This is just to get the # of samples per sub and seq length
-
-		self.seq_length = seq_length
 
 		data_file = h5py.File(self.dataset_filename, 'r')
 		self.sub_length = data_file[data_key].shape[0]
@@ -37,6 +34,7 @@ class DeapDataset(Dataset):
 		data_file = h5py.File(self.dataset_filename, 'r')
 
 		sub = int(np.ceil(idx / self.sub_length))
+		idx = idx % self.sub_length
 		data_key = str('data_s' + str(sub))
 		labels_key = str('labels_s' + str(sub)) 
 
@@ -45,7 +43,7 @@ class DeapDataset(Dataset):
 
 		data_file.close()
 				
-		sample = {'data': torch.from_numpy(data).float(), 'label': label[:, 0]}		# Only valence label!!
+		sample = {'data': torch.from_numpy(data).float(), 'label': label[0]}		# Only valence label!!
 
 		return sample
 

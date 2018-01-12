@@ -2,9 +2,8 @@ from __future__ import print_function
 import argparse
 import torch
 import torch.optim
-import model_spattemporalconv_decision
 import model_tempconv_lstm
-import utils
+
 from train_loop import TrainLoop
 
 # Training settings
@@ -29,10 +28,7 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-if (args.model == 0):
-	model = model_spattemporalconv_decision.model()
-elif (args.model == 1):
-	model = model_tempconv_lstm.model()
+model = model_tempconv_lstm.model()
 
 
 if args.cuda:
