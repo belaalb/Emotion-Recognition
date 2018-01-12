@@ -100,28 +100,38 @@ def labels_quantization(labels):
 	return labels	
 	
 	
-def merge_all_subjects(n_subjects = 32, hdf_filename = 'DEAP_complete_sequence.hdf'):
+def merge_all_subjects(n_subjects = 32, n_sub_valid = 3, root_filename = 'DEAP_complete_sequence_'):
 
-	complete_dataset = h5py.File(hdf_filename, 'w')
+	filename_train = root_filename + 'train.hdf'
+	filename_valid = root_filename + 'valid.hdf'
 
-	for sub in range(1, n_subjects + 1):
+	complete_dataset_train = h5py.File(filename_train, 'w')
+
+	for sub in range(1, n_subjects - n_sub_valid + 1):
 
 		data_sub, labels_sub = split_data_per_subject(sub, seq_length = 10)
 		data_key = str('data_s' + str(sub))
 		labels_key = str('labels_s' + str(sub))
-		complete_dataset[data_key] = data_sub
-		complete_dataset[labels_key] = labels_sub
+		complete_dataset_train[data_key] = data_sub
+		complete_dataset_train[labels_key] = labels_sub
 	
-	complete_dataset.close()
+	complete_dataset_train.close()
+
+
+	complete_dataset_valid = h5py.File(filename_valid, 'w')
+
+	for sub in range(n_subjects - n_sub_valid + 1, n_subjects + 1):
+
+		data_sub, labels_sub = split_data_per_subject(sub, seq_length = 10)
+		data_key = str('data_s' + str(sub))
+		labels_key = str('labels_s' + str(sub))
+		complete_dataset_valid[data_key] = data_sub
+		complete_dataset_valid[labels_key] = labels_sub
+	
+	complete_dataset_valid.close()
 
 if __name__ == '__main__':
+	
 	merge_all_subjects()
 
-	open_file = h5py.File('DEAP_complete_sequence.hdf', 'r')
-	
-	data = open_file['data_s32']
-	labels = open_file['labels_s32']
-
-	print(data.shape)
-	print(labels.shape)
 

@@ -8,43 +8,44 @@ import utils
 
 class DeapDataset(Dataset):
 
-	def __init__(self, root = "./DEAP_dataset", step = "train", seq_length = 3):
+	def __init__(self, root = "DEAP_complete_sequence_", step = "train"):
 
 		if (step == "train"):
-			self.dataset_filename = root + "_train.hdf"
+			self.dataset_filename = root + "train.hdf"
+			self.n_sub = 29		# 29 first subjects for train
+			data_key = 'data_s1'	# key for any subject. This is just to get the # of samples per sub and seq length
+
 		elif (step == "valid"):
-			self.dataset_filename = root + "_valid.hdf"
-		elif (setp == 'test'):
-			self.dataset_filename = root + "_test.hdf"
+			self.dataset_filename = root + "valid.hdf"
+			self.n_sub = 3		# 3 last subjects from validation
+			data_key = 'data_s32'	# key for any subject. This is just to get the # of samples per sub and seq length
 
 		self.seq_length = seq_length
 
-	def __len__(self):
+		data_file = h5py.File(self.dataset_filename, 'r')
+		self.sub_length = data_file[data_key].shape[0]
+		self.seq_length = data_file[data_key].shape[1]
 
-		self.length = utils.read_hdf_processed_labels_return_size(self.dataset_filename) - self.seq_length 
+		self.length = self.n_sub * self.sub_length - self.seq_length		
+
+	def __len__(self):
 		
 		return self.length
 
 	def __getitem__(self, idx):
+			
+		data_file = h5py.File(self.dataset_filename, 'r')
 
-		# Get item returns a sequence of samples
-		data_seq = []
-		label_seq = []			
-		for i in range(self.seq_length):
-			data_file = h5py.File(self.dataset_filename, 'r')
+		sub = int(np.ceil(idx / self.sub_length))
+		data_key = str('data_s' + str(sub))
+		labels_key = str('labels_s' + str(sub)) 
 
-			data = data_file['data'][idx + i]
-			label = data_file['labels_val'][idx + i]
+		data = data_file[data_key][idx]
+		label = data_file[labels_key][idx]
 
-			data_file.close()
-
-			data_seq.append(data)
-			label_seq.append(label)
-					
-		data_seq = np.asarray(data_seq)
-		label_seq = np.asarray(label_seq[0])
-		label_seq = torch.from_numpy(label_seq).long().view(-1, 1)
-		sample = {'data': torch.from_numpy(data_seq).float(), 'label': label_seq}
+		data_file.close()
+				
+		sample = {'data': torch.from_numpy(data).float(), 'label': label[:, 0]}		# Only valence label!!
 
 		return sample
 
