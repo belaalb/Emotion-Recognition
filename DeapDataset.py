@@ -23,7 +23,9 @@ class DeapDataset(Dataset):
 		self.sub_length = data_file[data_key].shape[0]
 		self.seq_length = data_file[data_key].shape[1]
 
-		self.length = self.n_sub * self.sub_length - self.seq_length		
+		self.length = self.n_sub * self.sub_length - self.seq_length	
+
+		self.step = step	
 
 	def __len__(self):
 		
@@ -34,6 +36,13 @@ class DeapDataset(Dataset):
 		data_file = h5py.File(self.dataset_filename, 'r')
 
 		sub = int(np.ceil(idx / self.sub_length))
+		
+		if (sub == 0):
+			sub += 1
+
+		if (self.step == 'valid'):
+			sub += 29
+
 		idx = idx % self.sub_length
 		data_key = str('data_s' + str(sub))
 		labels_key = str('labels_s' + str(sub)) 
