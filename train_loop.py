@@ -72,10 +72,6 @@ class TrainLoop(object):
 			print('Epoch {}/{}'.format(self.cur_epoch + 1, n_epochs))
 			train_iter = tqdm(enumerate(self.dataloader_train))
 
-			print(train_iter)
-
-			print(self.cur_epoch)
-
 			for t, batch in train_iter:
 
 				loss, acc = self.train_step(batch)
@@ -87,8 +83,6 @@ class TrainLoop(object):
 				self.iter_epoch += 1
 
 				train_accuracy += acc
-
-				print(acc)
 				
 				if save_every is not None:
 					if self.total_iters % save_every == 0:
@@ -114,8 +108,6 @@ class TrainLoop(object):
 				n_valid_iterations += 1
 
 				valid_accuracy += acc	
-
-				print(acc)
 
 
 			valid_accuracy_avg = valid_accuracy / n_valid_iterations 	
@@ -147,8 +139,6 @@ class TrainLoop(object):
 		x = batch['data']
 		y = batch['label']
 		
-		print('\n')
-
 		x = Variable(x)
 		y = Variable(y, requires_grad = False)
 
@@ -169,8 +159,6 @@ class TrainLoop(object):
 		self.optimizer.step()
 
 		loss_return = torch.sum(loss_calc.data)
-
-		print(loss_return)
 		
 		out_max = (torch.max(out, 1)[1])
 
@@ -178,7 +166,7 @@ class TrainLoop(object):
 		accuracy_return = accuracy.data[0]
 
 
-		if (self.iter_epoch % 501 == 0):
+		if (self.iter_epoch % 200 == 0):
 
 			out_max = out_max.cpu().data.numpy()
 			targets = targets.cpu().data.numpy()
