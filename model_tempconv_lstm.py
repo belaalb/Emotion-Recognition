@@ -223,7 +223,7 @@ class model_eeg(nn.Module):
 
 		output = self.fc_lstm(seq_out[-1])
 		output = F.relu(output)
-		output = F.softmax(self.fc_out(output), 0)
+		output = F.sigmoid(self.fc_out(output))
 
 		return output
 		

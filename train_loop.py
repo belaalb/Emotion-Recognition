@@ -160,26 +160,28 @@ class TrainLoop(object):
 		self.optimizer.step()
 
 		loss_return = torch.sum(loss_calc.data)
-		
-		out_max = (torch.max(out, 1)[1])
 
-		accuracy = torch.mean((out_max == y[:, 0]).float())
-		accuracy_return = accuracy.data[0]
+		class_pred = out.data.gt(0.5 * torch.ones_like(out.data)).float()
 
-		print(self.model.features_eeg[0].weight.grad[0, 0, :])
+		#print(class_pred)
+
+		correct = class_pred.eq(targets.data).sum()
+		accuracy_return = 100.0 * correct / len(y)
+
+		print(accuracy_return)
 
 		if (self.iter_epoch % 200 == 0):
 
-			out_max = out_max.cpu().data.numpy()
+			class_pred = class_pred.cpu().numpy()
 			targets = targets.cpu().data.numpy()
 
 			print('Precision')
-			print(precision_score(targets, out_max))
+			print(precision_score(targets, class_pred))
 			print('Recall')
-			print(recall_score(targets, out_max))
+			print(recall_score(targets, class_pred))
 			print('F1 score')
-			print(f1_score(targets, out_max))
-			print(out_max)
+			print(f1_score(targets, class_pred))
+			print(class_pred)
  	
 
 		return loss_return, accuracy_return
@@ -210,10 +212,13 @@ class TrainLoop(object):
 
 		loss_return = loss_return.data[0]
 
-		out_max = (torch.max(out, 1)[1])
+		class_pred = out.data.gt(0.5 * torch.ones_like(out.data)).float()
 
-		accuracy = torch.mean((out_max == y[:, 0]).float())
-		accuracy_return = accuracy.data[0]
+		#print(class_pred)
+
+		correct = class_pred.eq(targets.data).sum()
+		accuracy_return = 100.0 * correct / len(y)
+
 
 		return loss_return, accuracy_return
 
