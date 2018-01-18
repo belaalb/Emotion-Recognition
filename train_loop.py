@@ -161,6 +161,8 @@ class TrainLoop(object):
 
 		loss_return = torch.sum(loss_calc.data)
 
+		self.check_nans()
+
 		class_pred = out.data.gt(0.5 * torch.ones_like(out.data)).float()
 
 		#print(class_pred)
@@ -169,6 +171,7 @@ class TrainLoop(object):
 		accuracy_return = 100.0 * correct / len(y)
 
 		print(accuracy_return)
+
 
 		if (self.iter_epoch % 200 == 0):
 
@@ -254,4 +257,13 @@ class TrainLoop(object):
 
 		else:
 
-			print('No checkpoint found at {}'.format(ckpt))				
+			print('No checkpoint found at {}'.format(ckpt))
+
+	def check_nans(self):
+
+		for layer in self.model.modules():	
+			for params in list(layer.parameters()):
+				if np.any(np.isnan(params.data.cpu().numpy())):
+					print('params NANs!!!!!')
+				if np.any(np.isnan(params.grad.data.cpu().numpy())):
+					print('grads NANs!!!!!!')				
