@@ -88,8 +88,9 @@ class TrainLoop(object):
 					if self.total_iters % save_every == 0:
 						torch.save(self, self.save_every_fmt.format(self.total_iters))
 
-				
+			train_loss_avg = train_loss_sum / self.iter_epoch  	
 			train_accuracy_avg = train_accuracy / self.iter_epoch  
+			print('Training loss: {}'.format(train_loss_avg))			
 			print('Training accuracy: {}'.format(train_accuracy_avg))
 
 
@@ -109,11 +110,10 @@ class TrainLoop(object):
 
 				valid_accuracy += acc	
 
-
-			valid_accuracy_avg = valid_accuracy / n_valid_iterations 	
-			print('Validation accuracy: {}'.format(valid_accuracy_avg))
-
 			valid_loss_avg = valid_loss_sum / n_valid_iterations
+			valid_accuracy_avg = valid_accuracy / n_valid_iterations
+			print('Validation loss: {}'.format(valid_loss_avg)) 	
+			print('Validation accuracy: {}'.format(valid_accuracy_avg))
 
 			self.checkpointing()
 
@@ -154,7 +154,7 @@ class TrainLoop(object):
 		targets = targets.view(targets.size(0), 1)
 		targets = targets.float()
 
-		loss_calc = F.binary_cross_entropy(out, targets) + F.mse_loss(out.mean(), targets.mean()) + F.mse_loss(out.std(), targets.std())
+		loss_calc = F.binary_cross_entropy(out, targets) # + F.mse_loss(out.mean(), targets.mean()) + F.mse_loss(out.std(), targets.std())
 
 		loss_calc.backward()
 		self.optimizer.step()
@@ -211,7 +211,7 @@ class TrainLoop(object):
 		targets = targets.view(targets.size(0), 1)
 		targets = targets.float()
 
-		loss_return = F.binary_cross_entropy(out, targets) + F.mse_loss(out.mean(), targets.mean()) + F.mse_loss(out.std(), targets.std())
+		loss_return = F.binary_cross_entropy(out, targets) # + F.mse_loss(out.mean(), targets.mean()) + F.mse_loss(out.std(), targets.std())
 
 		loss_return = loss_return.data[0]
 
