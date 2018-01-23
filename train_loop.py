@@ -61,6 +61,7 @@ class TrainLoop(object):
 		# Note: Logging expects the losses to be divided by the batch size
 
 		last_val_loss = float('inf')
+		self.initialize_params()
 
 		while (self.cur_epoch < n_epochs) and (self.its_without_improv < patience):
 			train_loss_sum = 0.0
@@ -268,5 +269,9 @@ class TrainLoop(object):
 				if np.any(np.isnan(params.grad.data.cpu().numpy())):
 					print('grads NANs!!!!!!')			
 
+	def initialize_params(self):
 
+		for layer in self.model.modules():
+			if isinstance(layer, torch.nn.Conv1d):
+		  		nn.init.kaiming_normal(layer.weight.data)
      
