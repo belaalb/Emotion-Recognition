@@ -7,17 +7,17 @@ from torch.utils.data import Dataset, DataLoader
 
 class DeapDataset(Dataset):
 
-	def __init__(self, root = "DEAP_complete_sequence_", step = "train"):
+	def __init__(self, root = "DEAP_complete_sequence_3sub_", step = "train"):
 
 		if (step == "train"):
 			self.dataset_filename = root + "train.hdf"
-			self.n_sub = 29		# 29 first subjects for train
+			self.n_sub = 2	#29		# 29 first subjects for train
 			data_key = 'data_s1'	# key for any subject. This is just to get the # of samples per sub and seq length
 
 		elif (step == "valid"):
 			self.dataset_filename = root + "valid.hdf"
-			self.n_sub = 3		# 3 last subjects from validation
-			data_key = 'data_s32'	# key for any subject. This is just to get the # of samples per sub and seq length
+			self.n_sub = 1 	#3		# 3 last subjects from validation
+			data_key = 'data_s3' #'data_s32'	# key for any subject. This is just to get the # of samples per sub and seq length
 
 		data_file = h5py.File(self.dataset_filename, 'r')
 		self.sub_length = data_file[data_key].shape[0]
@@ -41,7 +41,7 @@ class DeapDataset(Dataset):
 			sub += 1
 
 		if (self.step == 'valid'):
-			sub += 29
+			sub += 2	#29
 
 		idx = idx % self.sub_length
 		data_key = str('data_s' + str(sub))

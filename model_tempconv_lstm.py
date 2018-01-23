@@ -184,13 +184,13 @@ class model_eeg(nn.Module):
 			nn.ReLU(),			
 			nn.Linear(512, 128))				# Representation to be concatenated
 		
-		self.n_hidden_layers = 1
-		self.hidden_size = 64
+		self.n_hidden_layers = 2
+		self.hidden_size = 80
 		self.lstm = nn.LSTM(128, self.hidden_size, self.n_hidden_layers, bidirectional = False)
-		self.fc_lstm = nn.Linear(self.hidden_size, 8)
+		self.fc_lstm = nn.Linear(self.hidden_size, 40)
 
 		# Output layer
-		self.fc_out = nn.Linear(8, 1)
+		self.fc_out = nn.Linear(40, 1)
 			
 
 	def forward(self, x):
@@ -228,4 +228,80 @@ class model_eeg(nn.Module):
 		return output
 		
 
+'''
+Model 3: Shorter version of temporal convolution + lstm for valence classification
+- Only EEG 
+- 1 second long samples
+'''
+
+class model_eeg_short(nn.Module):
+	
+	def __init__(self):
+
+		super(model_eeg_short, self).__init__()
+
+		self.features_eeg = nn.Sequential(
+			nn.Conv1d(32, 48, kernel_size = 32),		# 128 - 32 + 1 = 97
+			nn.MaxPool1d(16, stride = 1),				# Out = 82
+			nn.ReLU(),
+			nn.Conv1d(48, 64, kernel_size = 32),		# 82 - 32 + 1 = 51
+			nn.MaxPool1d(16, stride = 1),				# Out = 36
+			nn.ReLU(),
+			nn.Conv1d(64, 64, kernel_size = 16),		# 36 - 16 + 1 = 21
+			nn.MaxPool1d(4, stride = 1),				# Out = 18
+			nn.ReLU(),
+			nn.Conv1d(64, 100, kernel_size = 8),		# 18 - 8 + 1 = 11
+			nn.AvgPool1d(4, stride = 1),				# Out = 8
+			nn.ReLU())
+
+		self.features_eeg_flatten = nn.Sequential(			
+			nn.Linear(100*8, 500),
+			nn.ReLU(),		
+			nn.Linear(500, 128),				# Representation to be concatenated
+			nn.ReLU())		
+
+		self.n_hidden_layers = 1
+		self.hidden_size = 80
+		self.lstm = nn.LSTM(128, self.hidden_size, self.n_hidden_layers, bidirectional = False)
+		self.fc_lstm = nn.Linear(self.hidden_size, 40)
+
+		# Output layer
+		self.fc_out = nn.Linear(40, 1)
+
+
+	def forward(self, x):
+
+		minibatch_size = x.size(0)
+		seq_length = x.size(1)
+	
+		x_eeg = x[:, :, 0:32, :]
+		x_eeg = x_eeg.contiguous()
+		x_eeg = x_eeg.view(minibatch_size*seq_length, x_eeg.size(-2), x_eeg.size(-1))
+
+		#EEG
+		x_eeg = self.features_eeg(x_eeg)
+		x_eeg = x_eeg.view(x_eeg.size(0), -1)
+		x_eeg = self.features_eeg_flatten(x_eeg)
+
 		
+		# Reshape lstm input 
+		lstm_input = x_eeg.view(seq_length, minibatch_size, x_eeg.size(-1))
+
+		# Initial hidden states
+		h0 = Variable(torch.zeros(self.n_hidden_layers, lstm_input.size(1), self.hidden_size))  
+		c0 = Variable(torch.zeros(self.n_hidden_layers, lstm_input.size(1), self.hidden_size))
+
+		if x.is_cuda:
+			h0 = h0.cuda()
+			c0 = c0.cuda()	
+
+		seq_out, _ = self.lstm(lstm_input, (h0, c0))
+
+		output = self.fc_lstm(seq_out[-1])
+		output = F.relu(output)
+		output = F.sigmoid(self.fc_out(output))
+
+		return output
+		
+
+				

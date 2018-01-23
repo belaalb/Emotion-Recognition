@@ -8,12 +8,12 @@ from train_loop import TrainLoop
 
 # Training settings
 parser = argparse.ArgumentParser(description = 'Online transfer learning for emotion recognition tasks')
-parser.add_argument('--minibatch-size', type = int, default = 128, metavar = 'N', help = 'input batch size for training (default: 64)')
+parser.add_argument('--minibatch-size', type = int, default = 256, metavar = 'N', help = 'input batch size for training (default: 64)')
 parser.add_argument('--valid-batch-size', type = int, default = 1000, metavar = 'N', help = 'input batch size for testing (default: 1000)')
 parser.add_argument('--epochs', type = int, default = 500, metavar = 'N', help = 'number of epochs to train (default: 200)')
 parser.add_argument('--patience', type = int, default = 30, metavar = 'N', help = 'number of epochs without improvement to wait before stopping training (default: 30)')
 parser.add_argument('--lr', type = float, default = 0.001, metavar = 'LR', help = 'learning rate (default: 0.001)')
-parser.add_argument('--l2', type = float, default = 0.0001, metavar = 'lambda', help = 'L2 weight decay coefficient (default: 0.0001)')
+parser.add_argument('--l2', type = float, default = 0.001, metavar = 'lambda', help = 'L2 weight decay coefficient (default: 0.0001)')
 parser.add_argument('--no-cuda', action = 'store_true', default = False, help = 'disables CUDA training')
 parser.add_argument('--checkpoint-epoch', type = int, default = None, metavar = 'N', help = 'epoch to load for checkpointing. If None, training starts from scratch')
 parser.add_argument('--checkpoint-path', type = str, default = None, metavar = 'Path', help = 'Path for checkpointing')
@@ -28,14 +28,14 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-model = model_tempconv_lstm.model_eeg()
+model = model_tempconv_lstm.model_eeg_short()
 
 
 if args.cuda:
 	#model = torch.nn.DataParallel(model).cuda()
 	model = model.cuda()
 
-optimizer = torch.optim.RMSprop(model.parameters(), lr = args.lr, weight_decay = args.l2)
+optimizer = torch.optim.SGD(model.parameters(), lr = args.lr, weight_decay = args.l2)
 
 trainer = TrainLoop(model, optimizer, args.minibatch_size, checkpoint_path = args.checkpoint_path, checkpoint_epoch = args.checkpoint_epoch, cuda = args.cuda)
 

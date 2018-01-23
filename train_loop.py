@@ -62,7 +62,6 @@ class TrainLoop(object):
 
 		last_val_loss = float('inf')
 
-
 		while (self.cur_epoch < n_epochs) and (self.its_without_improv < patience):
 			train_loss_sum = 0.0
 			train_accuracy = 0.0
@@ -172,6 +171,7 @@ class TrainLoop(object):
 
 		print(accuracy_return)
 
+		print(self.model.features_eeg[0].weight.grad[0, 1, :]) 
 
 		if (self.iter_epoch % 200 == 0):
 
@@ -266,4 +266,7 @@ class TrainLoop(object):
 				if np.any(np.isnan(params.data.cpu().numpy())):
 					print('params NANs!!!!!')
 				if np.any(np.isnan(params.grad.data.cpu().numpy())):
-					print('grads NANs!!!!!!')				
+					print('grads NANs!!!!!!')			
+
+
+     

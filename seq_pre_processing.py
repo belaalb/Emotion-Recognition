@@ -130,6 +130,6 @@ def merge_all_subjects(n_subjects = 32, n_sub_valid = 3, root_filename = 'DEAP_c
 
 if __name__ == '__main__':
 	
-	merge_all_subjects()
+	merge_all_subjects(n_subjects = 3, n_sub_valid = 1, root_filename = 'DEAP_complete_sequence_3sub_')
 
 
