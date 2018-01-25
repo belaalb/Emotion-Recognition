@@ -45,6 +45,7 @@ class TrainLoop(object):
 			self.total_iters = 0
 			self.cur_epoch = 0
 			self.its_without_improv = 0
+			self.initialize_params()
 
 		else:
 			self.load_checkpoint(self.save_epoch_fmt.format(checkpoint_epoch))
@@ -61,7 +62,6 @@ class TrainLoop(object):
 		# Note: Logging expects the losses to be divided by the batch size
 
 		last_val_loss = float('inf')
-		self.initialize_params()
 
 		while (self.cur_epoch < n_epochs) and (self.its_without_improv < patience):
 			train_loss_sum = 0.0
@@ -75,9 +75,7 @@ class TrainLoop(object):
 			for t, batch in train_iter:
 
 				loss, acc = self.train_step(batch)
-
-				self.history['train_loss'].append(loss)	
-
+	
 				train_loss_sum += loss
 				self.total_iters += 1
 				self.iter_epoch += 1
@@ -89,7 +87,10 @@ class TrainLoop(object):
 						torch.save(self, self.save_every_fmt.format(self.total_iters))
 
 			train_loss_avg = train_loss_sum / self.iter_epoch  	
-			train_accuracy_avg = train_accuracy / self.iter_epoch  
+			train_accuracy_avg = train_accuracy / self.iter_epoch 
+
+			self.history['train_loss'].append(train_loss_avg)
+ 
 			print('Training loss: {}'.format(train_loss_avg))			
 			print('Training accuracy: {}'.format(train_accuracy_avg))
 
@@ -102,8 +103,6 @@ class TrainLoop(object):
 			for t, batch in enumerate(self.dataloader_valid):
 				
 				loss, acc = self.valid(batch)
-				
-				self.history['valid_loss'].append(loss)
 
 				valid_loss_sum += loss
 				n_valid_iterations += 1
@@ -112,6 +111,9 @@ class TrainLoop(object):
 
 			valid_loss_avg = valid_loss_sum / n_valid_iterations
 			valid_accuracy_avg = valid_accuracy / n_valid_iterations
+
+			self.history['valid_loss'].append(valid_loss_avg)
+
 			print('Validation loss: {}'.format(valid_loss_avg)) 	
 			print('Validation accuracy: {}'.format(valid_accuracy_avg))
 
@@ -172,7 +174,7 @@ class TrainLoop(object):
 
 		print(accuracy_return)
 
-		print(self.model.features_eeg[0].weight.grad[0, 1, :]) 
+		print(self.model.fc_lstm.weight.grad[0, :]) 
 
 		if (self.iter_epoch % 200 == 0):
 

@@ -3,15 +3,12 @@ import torch
 
 import numpy as np
 import matplotlib.pyplot as plt
-import pickle
+
 
 import os
-from glob import glob
-from tqdm import tqdm
-import utils
 from torch.utils.data import DataLoader
 from DeapDataset import DeapDataset
-import model_arousal_eeg_gsr_temp_convtemporal
+import model_tempconv_lstm
 
 from sklearn.metrics import precision_score, f1_score, recall_score, accuracy_score, roc_auc_score
 
@@ -62,11 +59,11 @@ def calculate_metrics(labels, output, out_dict):
 	
 
 
-def test_model_classification_decision_level(model, ckpt, dataloader_valid, cuda_mode):
+def test_model_classification(model, ckpt, dataloader_valid, cuda_mode):
 
 	model.load_state_dict(ckpt['model_state'])
 
-	out = {'acc': [], 'precision': [], 'recall': [], 'f1': [], 'auc': []}
+	out_metrics = {'acc': [], 'precision': [], 'recall': [], 'f1': [], 'auc': []}
 
 	for t, batch in enumerate(dataloader_valid):
 
@@ -83,14 +80,12 @@ def test_model_classification_decision_level(model, ckpt, dataloader_valid, cuda
 		x = Variable(x, requires_grad = False)
 		y = Variable(y, requires_grad = False)
 
-		out_eeg, out_temp_gsr = model.forward_multimodal_arousal(x)
-
-		out_fusion = (out_eeg + out_temp_gsr) / 2
+		out = model.forward(x)
 
 		
-		labels = y[:, 1].cpu().data.numpy()
+		labels = y[:, 0].cpu().data.numpy()
 
-		metrics = calculate_metrics(labels, out_fusion.cpu().data.numpy(), out)
+		metrics = calculate_metrics(labels, out.cpu().data.numpy(), out_metrics)
 
 
 	return metrics
@@ -100,26 +95,24 @@ def test_model_classification_decision_level(model, ckpt, dataloader_valid, cuda
 
 if __name__ == '__main__':
 
-	reciprocal_weights_valid, length_valid = utils.calculate_weights(step = 'valid')
-	weight_valid = 1 / torch.DoubleTensor(reciprocal_weights_valid)
+
 	dataset_valid = DeapDataset(step = 'valid')
-	sampler_valid = torch.utils.data.sampler.WeightedRandomSampler(weight_valid, length_valid)
-	dataloader_valid = DataLoader(dataset_valid, 400)
+	dataloader_valid = DataLoader(dataset_valid, 50)
 	cuda_mode = True
 
-	model = model_arousal_eeg_gsr_temp_convtemporal.model()
-	ckpt = '/home/isabela/Desktop/emot_recog_class/less_signals_3s/decision_level/valence_last_trial/checkpoint_15ep.pt'
+	model = model_tempconv_lstm.model_eeg_short()
+	ckpt = 'checkpoint_4ep.pt'
 
 	ckpt = load_checkpoint(ckpt)
 	
-	metrics = test_model_classification_decision_level(model, ckpt, dataloader_valid, cuda_mode)
+	#metrics = test_model_classification(model, ckpt, dataloader_valid, cuda_mode)
 
-	#history = ckpt['history']
-	#plot_learningcurve(history, 'train_loss', 'valid_loss')
+	history = ckpt['history']
+	plot_learningcurves(history, 'train_loss', 'valid_loss')
 
-	for key in metrics.keys():
-		print(key)		
-		print(sum(metrics[key])/len(metrics[key]))
+	#for key in metrics.keys():
+	#	print(key)		
+	#	print(sum(metrics[key])/len(metrics[key]))
 
 	
 

@@ -242,17 +242,18 @@ class model_eeg_short(nn.Module):
 
 		self.features_eeg = nn.Sequential(
 			nn.Conv1d(32, 48, kernel_size = 32),		# 128 - 32 + 1 = 97
+			nn.ReLU(),
 			nn.MaxPool1d(16, stride = 1),				# Out = 82
-			nn.ReLU(),
 			nn.Conv1d(48, 64, kernel_size = 32),		# 82 - 32 + 1 = 51
+			nn.ReLU(),
 			nn.MaxPool1d(16, stride = 1),				# Out = 36
-			nn.ReLU(),
 			nn.Conv1d(64, 64, kernel_size = 16),		# 36 - 16 + 1 = 21
-			nn.MaxPool1d(4, stride = 1),				# Out = 18
 			nn.ReLU(),
+			nn.MaxPool1d(4, stride = 1),				# Out = 18
 			nn.Conv1d(64, 100, kernel_size = 8),		# 18 - 8 + 1 = 11
-			nn.AvgPool1d(4, stride = 1),				# Out = 8
-			nn.ReLU())
+			nn.ReLU(),
+			nn.AvgPool1d(4, stride = 1))				# Out = 8
+
 
 		self.features_eeg_flatten = nn.Sequential(			
 			nn.Linear(100*8, 500),
@@ -263,10 +264,10 @@ class model_eeg_short(nn.Module):
 		self.n_hidden_layers = 1
 		self.hidden_size = 80
 		self.lstm = nn.LSTM(128, self.hidden_size, self.n_hidden_layers, bidirectional = False)
-		self.fc_lstm = nn.Linear(self.hidden_size, 40)
+		self.fc_lstm = nn.Linear(self.hidden_size, 1)
 
 		# Output layer
-		self.fc_out = nn.Linear(40, 1)
+		#self.fc_out = nn.Linear(40, 1)
 
 
 	def forward(self, x):
@@ -298,8 +299,9 @@ class model_eeg_short(nn.Module):
 		seq_out, _ = self.lstm(lstm_input, (h0, c0))
 
 		output = self.fc_lstm(seq_out[-1])
-		output = F.relu(output)
-		output = F.sigmoid(self.fc_out(output))
+		#output = F.relu(output)
+		#output = F.sigmoid(self.fc_out(output))
+		output = F.hardtanh(output, 0, 1)
 
 		return output
 		

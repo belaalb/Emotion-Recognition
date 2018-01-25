@@ -45,7 +45,8 @@ def split_data_per_subject(sub = 1, segment_duration = 1, seq_length = 10, sampl
 	data_non_seq = np.reshape(np.asarray(data_non_seq), (n_examples, data.shape[1], n_points))
 	labels = np.reshape(np.asarray(labels_expanded), (n_examples, labels.shape[1]))
 
-	data_non_seq_res = rescale(data_non_seq)	
+	data_non_seq_res = rescale(data_non_seq)
+	#data_non_seq_res = data_non_seq	
 
 	data_seq = []
 
@@ -71,9 +72,14 @@ def rescale(data_non_seq):
 	max_per_channel = np.max(np.max(data_non_seq, axis = 2), axis = 0)
 	min_per_channel = np.min(np.min(data_non_seq, axis = 2), axis = 0)
 
+	mean_per_channel = np.mean(np.max(data_non_seq, axis = 2), axis = 0)
+	std_per_channel = np.std(np.min(data_non_seq, axis = 2), axis = 0)
+
+
 	for sample in data_non_seq:
 		for channel in range(0, data_non_seq.shape[1]):
 			sample[channel, :] = (sample[channel, :] - min_per_channel[channel]) / (max_per_channel[channel] - min_per_channel[channel])
+			#sample[channel, :] = (sample[channel, :] - mean_per_channel[channel]) / std_per_channel[channel]
 	
 	return data_non_seq
 
