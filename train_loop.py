@@ -136,6 +136,8 @@ class TrainLoop(object):
 
 	def train_step(self, batch):
 
+		print('\n')
+
 		self.model.train()
 			
 		x = batch['data']
@@ -163,31 +165,37 @@ class TrainLoop(object):
 
 		loss_return = torch.sum(loss_calc.data)
 
-		self.check_nans()
-
 		class_pred = out.data.gt(0.5 * torch.ones_like(out.data)).float()
-
-		#print(class_pred)
 
 		correct = class_pred.eq(targets.data).sum()
 		accuracy_return = 100.0 * correct / len(y)
 
-		print(accuracy_return)
+		self.check_nans()
 
-		print(self.model.fc_lstm.weight.grad[0, :]) 
+		self.print_params_norm()
 
-		if (self.iter_epoch % 200 == 0):
+		self.print_grad_norm()
 
-			class_pred = class_pred.cpu().numpy()
-			targets = targets.cpu().data.numpy()
 
-			print('Precision')
-			print(precision_score(targets, class_pred))
-			print('Recall')
-			print(recall_score(targets, class_pred))
-			print('F1 score')
-			print(f1_score(targets, class_pred))
-			print(class_pred)
+		if (self.iter_epoch % 10 == 0):
+
+			#class_pred = class_pred.cpu().numpy()
+			#targets = targets.cpu().data.numpy()
+
+			#print('Precision')
+			#print(precision_score(targets, class_pred))
+			#print('Recall')
+			#print(recall_score(targets, class_pred))
+			#print('F1 score')
+			#print(f1_score(targets, class_pred))
+
+			print('Accuracy on minibatch:', accuracy_return)
+			
+			# Number of predicted 1s and 0s
+			pred_ones = class_pred.eq(torch.ones_like(class_pred)).sum()
+			pred_zeros = class_pred.eq(torch.zeros_like(class_pred)).sum()
+			print('Predicted ones:', pred_ones)
+			print('Predicted zeros:', pred_zeros)
  	
 
 		return loss_return, accuracy_return
@@ -220,8 +228,6 @@ class TrainLoop(object):
 
 		class_pred = out.data.gt(0.5 * torch.ones_like(out.data)).float()
 
-		#print(class_pred)
-
 		correct = class_pred.eq(targets.data).sum()
 		accuracy_return = 100.0 * correct / len(y)
 
@@ -239,6 +245,19 @@ class TrainLoop(object):
 		'cur_epoch': self.cur_epoch,
 		'its_without_improve': self.its_without_improv}
 		torch.save(ckpt, self.save_epoch_fmt.format(self.cur_epoch))
+
+	def update_lr(self):
+
+		for param_group in self.optimizer.param_groups:
+			param_group['lr'] = max(param_group['lr']/10., 0.000001)
+		print('updating lr to: {}'.format(param_group['lr']))
+
+	def initialize_params(self):
+
+		for layer in self.model.modules():
+			if isinstance(layer, torch.nn.Conv1d):
+		  		nn.init.kaiming_normal(layer.weight.data)
+
 
 	def load_checkpoint(self, ckpt):
 
@@ -262,6 +281,8 @@ class TrainLoop(object):
 
 			print('No checkpoint found at {}'.format(ckpt))
 
+	# Debugging stuff
+
 	def check_nans(self):
 
 		for layer in self.model.modules():	
@@ -271,9 +292,28 @@ class TrainLoop(object):
 				if np.any(np.isnan(params.grad.data.cpu().numpy())):
 					print('grads NANs!!!!!!')			
 
-	def initialize_params(self):
 
-		for layer in self.model.modules():
-			if isinstance(layer, torch.nn.Conv1d):
-		  		nn.init.kaiming_normal(layer.weight.data)
+	def print_params_norm(self):
+
+		norm = 0.0
+	
+		for params in list(self.model.parameters()):
+		
+			norm += params.norm(2).data[0]
+
+		print('Sum of weights norms: {}'.format(norm))
+
+
+	def print_grad_norm(self):
+
+		norm = 0.0
+
+		for i, params in enumerate(list(self.model.parameters())):
+			
+			norm += params.grad.norm(2).data[0]
+
+		print('Sum of grads norms: {}'.format(norm))
+
+
+
      

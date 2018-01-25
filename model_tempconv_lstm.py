@@ -244,19 +244,26 @@ class model_eeg_short(nn.Module):
 			nn.Conv1d(32, 48, kernel_size = 32),		# 128 - 32 + 1 = 97
 			nn.ReLU(),
 			nn.MaxPool1d(16, stride = 1),				# Out = 82
-			nn.Conv1d(48, 64, kernel_size = 32),		# 82 - 32 + 1 = 51
+
+			nn.Conv1d(48, 64, kernel_size = 16),		# 82 - 32 + 1 = 67
 			nn.ReLU(),
-			nn.MaxPool1d(16, stride = 1),				# Out = 36
-			nn.Conv1d(64, 64, kernel_size = 16),		# 36 - 16 + 1 = 21
+			nn.MaxPool1d(8, stride = 1),				# Out = 60
+
+			nn.Conv1d(64, 64, kernel_size = 16),		# 60 - 16 + 1 = 45
 			nn.ReLU(),
-			nn.MaxPool1d(4, stride = 1),				# Out = 18
-			nn.Conv1d(64, 100, kernel_size = 8),		# 18 - 8 + 1 = 11
+			nn.MaxPool1d(8, stride = 1),				# Out = 38
+			
+			nn.Conv1d(64, 64, kernel_size = 16),		# 38 - 16 + 1 = 23
 			nn.ReLU(),
-			nn.AvgPool1d(4, stride = 1))				# Out = 8
+			nn.MaxPool1d(4, stride = 1),				# Out = 20
+			
+			nn.Conv1d(64, 100, kernel_size = 8),		# 20 - 8 + 1 = 13
+			nn.ReLU(),
+			nn.AvgPool1d(4, stride = 1))				# Out = 10
 
 
 		self.features_eeg_flatten = nn.Sequential(			
-			nn.Linear(100*8, 500),
+			nn.Linear(100*10, 500),
 			nn.ReLU(),		
 			nn.Linear(500, 128),				# Representation to be concatenated
 			nn.ReLU())		
