@@ -45,6 +45,7 @@ class TrainLoop(object):
 			self.total_iters = 0
 			self.cur_epoch = 0
 			self.its_without_improv = 0
+			self.last_best_val_loss = np.inf
 			self.initialize_params()
 
 		else:
@@ -58,7 +59,7 @@ class TrainLoop(object):
 		self.dataloader_valid = DataLoader(self.dataset_valid, self.minibatch_size)
 
 
-	def train(self, n_epochs = 1, patience = 100, n_workers = 1, tl_delay = 1, save_every = None):
+	def train(self, n_epochs = 1, patience = 5):
 		# Note: Logging expects the losses to be divided by the batch size
 
 		last_val_loss = float('inf')
@@ -66,28 +67,22 @@ class TrainLoop(object):
 		while (self.cur_epoch < n_epochs) and (self.its_without_improv < patience):
 			train_loss_sum = 0.0
 			train_accuracy = 0.0
-			self.iter_epoch = 0.0
+			self.total_iters = 0.0
 			
 
 			print('Epoch {}/{}'.format(self.cur_epoch + 1, n_epochs))
 			train_iter = tqdm(enumerate(self.dataloader_train))
 
-			for t, batch in train_iter:
-
-				loss, acc = self.train_step(batch)
+			for it, batch in train_iter:
+				loss, acc = self.train_step(batch, it)
 	
 				train_loss_sum += loss
 				self.total_iters += 1
-				self.iter_epoch += 1
 
 				train_accuracy += acc
-				
-				if save_every is not None:
-					if self.total_iters % save_every == 0:
-						torch.save(self, self.save_every_fmt.format(self.total_iters))
 
-			train_loss_avg = train_loss_sum / self.iter_epoch  	
-			train_accuracy_avg = train_accuracy / self.iter_epoch 
+			train_loss_avg = train_loss_sum / (it + 1)  	
+			train_accuracy_avg = train_accuracy / (it + 1) 
 
 			self.history['train_loss'].append(train_loss_avg)
  
@@ -97,46 +92,44 @@ class TrainLoop(object):
 
 			# Validation
 			valid_loss_sum = 0.0
-			n_valid_iterations = 0
 			valid_accuracy = 0.0
 
-			for t, batch in enumerate(self.dataloader_valid):
+			for it, batch in enumerate(self.dataloader_valid):
 				
 				loss, acc = self.valid(batch)
 
 				valid_loss_sum += loss
-				n_valid_iterations += 1
-
 				valid_accuracy += acc	
 
-			valid_loss_avg = valid_loss_sum / n_valid_iterations
-			valid_accuracy_avg = valid_accuracy / n_valid_iterations
+			valid_loss_avg = valid_loss_sum / (it + 1)
+			valid_accuracy_avg = valid_accuracy / (it + 1)
 
 			self.history['valid_loss'].append(valid_loss_avg)
 
 			print('Validation loss: {}'.format(valid_loss_avg)) 	
 			print('Validation accuracy: {}'.format(valid_accuracy_avg))
 
-			self.checkpointing()
 
 			self.cur_epoch += 1
 
-			if valid_loss_avg < last_val_loss:
+			if self.history['valid_loss'][-1] < self.last_best_val_loss:
+				self.last_best_val_loss = self.history['valid_loss'][-1]
 				self.its_without_improv = 0
-
+				self.checkpointing()
 			else:
 				self.its_without_improv += 1
 
-			last_val_loss = valid_loss_avg	
+			if self.its_without_improv > patience:
+				self.its_without_improv = 0
+				self.update_lr()
+
 
 		# saving final models
 		print('Saving final model...')
 
 		torch.save(self.model.state_dict(), './model1.pt')
 
-	def train_step(self, batch):
-
-		print('\n')
+	def train_step(self, batch, curr_iter):
 
 		self.model.train()
 			
@@ -172,12 +165,13 @@ class TrainLoop(object):
 
 		self.check_nans()
 
+		print('\n')
+
 		self.print_params_norm()
 
 		self.print_grad_norm()
 
-
-		if (self.iter_epoch % 10 == 0):
+		if (curr_iter % 10 == 0):
 
 			#class_pred = class_pred.cpu().numpy()
 			#targets = targets.cpu().data.numpy()
@@ -194,8 +188,10 @@ class TrainLoop(object):
 			# Number of predicted 1s and 0s
 			pred_ones = class_pred.eq(torch.ones_like(class_pred)).sum()
 			pred_zeros = class_pred.eq(torch.zeros_like(class_pred)).sum()
+
 			print('Predicted ones:', pred_ones)
 			print('Predicted zeros:', pred_zeros)
+		
  	
 
 		return loss_return, accuracy_return
