@@ -12,7 +12,7 @@ parser.add_argument('--minibatch-size', type = int, default = 256, metavar = 'N'
 parser.add_argument('--valid-batch-size', type = int, default = 1000, metavar = 'N', help = 'input batch size for testing (default: 1000)')
 parser.add_argument('--epochs', type = int, default = 500, metavar = 'N', help = 'number of epochs to train (default: 200)')
 parser.add_argument('--patience', type = int, default = 10, metavar = 'N', help = 'number of epochs without improvement to wait before stopping training (default: 30)')
-parser.add_argument('--lr', type = float, default = 0.001, metavar = 'LR', help = 'learning rate (default: 0.001)')
+parser.add_argument('--lr', type = float, default = 0.1, metavar = 'LR', help = 'learning rate (default: 0.001)')
 parser.add_argument('--momentum', type = float, default = 0.9, metavar = 'mu', help = 'Momentum (default: 0.9)')
 parser.add_argument('--l2', type = float, default = 0.001, metavar = 'lambda', help = 'L2 weight decay coefficient (default: 0.0001)')
 parser.add_argument('--no-cuda', action = 'store_true', default = False, help = 'disables CUDA training')
