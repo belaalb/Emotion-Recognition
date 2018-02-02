@@ -312,5 +312,88 @@ class model_eeg_short(nn.Module):
 
 		return output
 		
+'''
+Model 4: features extractor architecture based on "Deep Learning With Convolutional Neural
+Networks for EEG Decoding and Visualization"
+- Only EEG 
+- 1 second long samples
+'''
 
+class model_2Dconv(nn.Module):
+	
+	def __init__(self):
+
+		super(model_eeg_short, self).__init__()
+
+		self.features_eeg = nn.Sequential(
+			nn.Conv2d(1, 25, kernel_size = (10, 1)),		# 128 - 10 + 1 = 119
+
+			nn.Conv2d(25, 1, kernel_size = (1, 32)),		# 82 - 32 + 1 = 67
+			nn.ELU(),
+			nn.MaxPool2d((3, 1), stride = 1),				# Out = 60
+
+			#RESHAPE!! x = x.view(-1, 1, 25, 119)
+
+			nn.Conv2d(1, 1, kernel_size = (10, 25)),		    # 60 - 16 + 1 = 45
+			nn.ReLU(),
+			nn.MaxPool2d((3, 1) stride = 1),				# Out = 38
+			
+			nn.Conv2d(64, 64, kernel_size = 16),		# 38 - 16 + 1 = 23
+			nn.ReLU(),
+			nn.MaxPool2d(4, stride = 1),				# Out = 20
+			
+			nn.Conv2d(64, 100, kernel_size = 8),		# 20 - 8 + 1 = 13
+			nn.ReLU(),
+			nn.AvgPool2d(4, stride = 1))				# Out = 10
+
+
+		self.features_eeg_flatten = nn.Sequential(			
+			nn.Linear(100*10, 500),
+			nn.ReLU(),		
+			nn.Linear(500, 128),				# Representation to be concatenated
+			nn.ReLU())		
+
+		self.n_hidden_layers = 1
+		self.hidden_size = 80
+		self.lstm = nn.LSTM(128, self.hidden_size, self.n_hidden_layers, bidirectional = False)
+		self.fc_lstm = nn.Linear(self.hidden_size, 1)
+
+		# Output layer
+		#self.fc_out = nn.Linear(40, 1)
+
+
+	def forward(self, x):
+
+		minibatch_size = x.size(0)
+		seq_length = x.size(1)
+	
+		x_eeg = x[:, :, 0:32, :]
+		x_eeg = x_eeg.contiguous()
+		x_eeg = x_eeg.view(minibatch_size*seq_length, x_eeg.size(-2), x_eeg.size(-1))
+
+		#EEG
+		x_eeg = self.features_eeg(x_eeg)
+		x_eeg = x_eeg.view(x_eeg.size(0), -1)
+		x_eeg = self.features_eeg_flatten(x_eeg)
+
+		
+		# Reshape lstm input 
+		lstm_input = x_eeg.view(seq_length, minibatch_size, x_eeg.size(-1))
+
+		# Initial hidden states
+		h0 = Variable(torch.zeros(self.n_hidden_layers, lstm_input.size(1), self.hidden_size))  
+		c0 = Variable(torch.zeros(self.n_hidden_layers, lstm_input.size(1), self.hidden_size))
+
+		if x.is_cuda:
+			h0 = h0.cuda()
+			c0 = c0.cuda()	
+
+		seq_out, _ = self.lstm(lstm_input, (h0, c0))
+
+		output = self.fc_lstm(seq_out[-1])
+		#output = F.relu(output)
+		#output = F.sigmoid(self.fc_out(output))
+		output = F.hardtanh(output, 0, 1)
+
+		return output
 				

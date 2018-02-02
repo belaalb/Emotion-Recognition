@@ -151,7 +151,7 @@ class TrainLoop(object):
 		targets = targets.view(targets.size(0), 1)
 		targets = targets.float()
 
-		loss_calc = F.binary_cross_entropy(out, targets) # + F.mse_loss(out.mean(), targets.mean()) + F.mse_loss(out.std(), targets.std())
+		loss_calc = F.binary_cross_entropy(out, targets) + F.mse_loss(out.mean(), targets.mean()) # + F.mse_loss(out.std(), targets.std())
 
 		loss_calc.backward()
 		self.optimizer.step()
@@ -218,7 +218,7 @@ class TrainLoop(object):
 		targets = targets.view(targets.size(0), 1)
 		targets = targets.float()
 
-		loss_return = F.binary_cross_entropy(out, targets) # + F.mse_loss(out.mean(), targets.mean()) + F.mse_loss(out.std(), targets.std())
+		loss_return = F.binary_cross_entropy(out, targets) + F.mse_loss(out.mean(), targets.mean()) # + F.mse_loss(out.std(), targets.std())
 
 		loss_return = loss_return.data[0]
 
