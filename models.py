@@ -11,11 +11,11 @@ Model 1: Temporal convolution + lstm + feature fusion, for valence classificatio
 - 3 seconds long samples
 '''
 
-class model(nn.Module):
+class model_multimodal(nn.Module):
 	
 	def __init__(self):
 
-		super(model, self).__init__()
+		super(model_multimodal, self).__init__()
 
 		self.features_eeg = nn.Sequential(
 			nn.Conv1d(32, 48, kernel_size = 128, bias = False),		# 384 - 128 + 1 = 257
@@ -143,11 +143,11 @@ Model 2: Temporal convolution + lstm for valence classification
 - 1 second long samples
 '''
 
-class model_eeg(nn.Module):
+class model_eeg_rnn(nn.Module):
 	
 	def __init__(self):
 
-		super(model_eeg, self).__init__()
+		super(model_eeg_rnn, self).__init__()
 
 		self.features_eeg = nn.Sequential(
 			nn.Conv1d(32, 48, kernel_size = 32, bias = False),		# 128 - 32 + 1 = 97
@@ -234,11 +234,11 @@ Model 3: Shorter version of temporal convolution + lstm for valence classificati
 - 1 second long samples
 '''
 
-class model_eeg_short(nn.Module):
+class model_eeg_rnn_short(nn.Module):
 	
 	def __init__(self):
 
-		super(model_eeg_short, self).__init__()
+		super(model_eeg_rnn_short, self).__init__()
 
 		self.features_eeg = nn.Sequential(
 			nn.Conv1d(32, 48, kernel_size = 32),		# 128 - 32 + 1 = 97
@@ -323,7 +323,7 @@ class model_2Dconv(nn.Module):
 	
 	def __init__(self):
 
-		super(model_eeg_short, self).__init__()
+		super(model_2Dconv, self).__init__()
 
 		self.features_eeg = nn.Sequential(
 			nn.Conv2d(1, 25, kernel_size = (10, 1)),		# 128 - 10 + 1 = 119
@@ -336,7 +336,7 @@ class model_2Dconv(nn.Module):
 
 			nn.Conv2d(1, 1, kernel_size = (10, 25)),		    # 60 - 16 + 1 = 45
 			nn.ReLU(),
-			nn.MaxPool2d((3, 1) stride = 1),				# Out = 38
+			nn.MaxPool2d((3, 1), stride = 1),				# Out = 38
 			
 			nn.Conv2d(64, 64, kernel_size = 16),		# 38 - 16 + 1 = 23
 			nn.ReLU(),
@@ -394,6 +394,69 @@ class model_2Dconv(nn.Module):
 		#output = F.relu(output)
 		#output = F.sigmoid(self.fc_out(output))
 		output = F.hardtanh(output, 0, 1)
+
+		return output
+
+
+'''
+Model 5: features extractor architecture based on ChronoNet
+- Only EEG 
+- 3 second long samples
+- Next steps: implement concatenated convolutions
+'''
+
+class model_eeg_rnn_shorterconvs(nn.Module):
+	
+	def __init__(self):
+
+		super(model_eeg_rnn_shorterconvs, self).__init__()
+
+		self.features_eeg = nn.Sequential(
+			nn.Conv1d(32, 64, kernel_size = 4),		# 384 - 4 + 1 = 381
+			nn.ReLU(),
+
+			nn.Conv1d(64, 64, kernel_size = 4),		# 381 - 4 + 1 = 378
+			nn.ReLU(),
+
+			nn.Conv1d(64, 64, kernel_size = 4),		# 378 - 4 + 1 = 375 
+			nn.ReLU())
+				
+
+		self.n_hidden_layers = 4
+		self.hidden_size = 64
+		self.lstm = nn.LSTM(64, self.hidden_size, self.n_hidden_layers, bidirectional = False)
+		self.fc_lstm = nn.Linear(self.hidden_size, 1)
+
+		# Output layer
+		#self.fc_out = nn.Linear(40, 1)
+
+
+	def forward(self, x):
+
+		minibatch_size = x.size(0)
+	
+		x_eeg = x[:, 0:32, :]
+		x_eeg = x_eeg.contiguous()
+
+		#EEG
+		x_eeg = self.features_eeg(x_eeg)
+		
+		# Reshape lstm input 
+		lstm_input = x_eeg.view(x_eeg.size(-1), minibatch_size, x_eeg.size(-2))
+
+		# Initial hidden states
+		h0 = Variable(torch.zeros(self.n_hidden_layers, lstm_input.size(1), self.hidden_size))  
+		c0 = Variable(torch.zeros(self.n_hidden_layers, lstm_input.size(1), self.hidden_size))
+
+		if x.is_cuda:
+			h0 = h0.cuda()
+			c0 = c0.cuda()	
+
+		seq_out, _ = self.lstm(lstm_input, (h0, c0))
+
+		output = self.fc_lstm(seq_out[-1])
+		output = F.sigmoid(output)
+
 
 		return output
 				
